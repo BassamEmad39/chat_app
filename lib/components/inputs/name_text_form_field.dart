@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class NameTextField extends StatefulWidget {
-  const NameTextField({
+class NameTextFormField extends StatefulWidget {
+  const NameTextFormField({
     super.key,
     this.hintText,
     this.controller,
@@ -9,6 +9,7 @@ class NameTextField extends StatefulWidget {
     this.keyboardType,
     this.isPassword = false, 
     this.onChanged,
+    this.validator,
   });
   final String? hintText;
   final TextEditingController? controller;
@@ -16,16 +17,17 @@ class NameTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final bool isPassword;
   final Function(String)? onChanged;
+  final String? Function(String?)? validator;
 
   @override
-  State<NameTextField> createState() => _NameTextFieldState();
+  State<NameTextFormField> createState() => _NameTextFieldState();
 }
 
-class _NameTextFieldState extends State<NameTextField> {
+class _NameTextFieldState extends State<NameTextFormField> {
   bool obscureText = true;
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField(
       onChanged: widget.onChanged,
       obscureText: widget.isPassword ? obscureText : false,
 
@@ -33,6 +35,7 @@ class _NameTextFieldState extends State<NameTextField> {
         FocusScope.of(context).unfocus();
       },
       controller: widget.controller,
+      validator: widget.validator,
       keyboardType: widget.keyboardType,
       decoration: InputDecoration(
         hintText: widget.hintText,
