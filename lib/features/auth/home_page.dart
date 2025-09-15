@@ -1,18 +1,38 @@
-import 'package:chat_app/components/user_tile.dart';
+// ignore_for_file: invalid_use_of_protected_member
+
 import 'package:chat_app/core/widgets/app_drawer.dart';
-import 'package:chat_app/features/chat/chat_page.dart';
+import 'package:chat_app/features/chat/chats_tab.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
+import 'package:chat_app/features/chat/group_list_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
-class HomePage extends StatelessWidget {
-  HomePage({super.key});
-  final ChatService chatServices = ChatService();
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-  User? getCurrentUser() {
-    return FirebaseAuth.instance.currentUser;
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  final ChatService chatServices = ChatService();
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
   }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  User? getCurrentUser() => FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +50,7 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -56,17 +77,16 @@ class HomePage extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(width: 40), 
+                    const SizedBox(width: 40),
                   ],
                 ),
               ),
-
               const Gap(10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
                   "Welcome back,",
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                  style: const TextStyle(color: Colors.white70, fontSize: 16),
                 ),
               ),
               Padding(
@@ -80,7 +100,34 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
-
+              const Gap(20),
+              // TabBar
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  dividerColor: Colors.transparent,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF06B6D4), Color(0xFF7C3AED)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white70,
+                  tabs: const [
+                    Tab(text: "Chats"),
+                    Tab(text: "Groups"),
+                  ],
+                ),
+              ),
               const Gap(20),
               Expanded(
                 child: Container(
@@ -91,7 +138,13 @@ class HomePage extends StatelessWidget {
                       topRight: Radius.circular(30),
                     ),
                   ),
-                  child: _buildUserList(),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      ChatsTab(chatServices: chatServices),
+                      GroupListPage(),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -99,46 +152,5 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildUserList() {
-    return StreamBuilder(
-      stream: chatServices.getUsersStream(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Error loading users'));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: snapshot.data!
-              .map<Widget>((userData) => _buildUserListItem(userData, context))
-              .toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildUserListItem(
-    Map<String, dynamic> userData,
-    BuildContext context,
-  ) {
-    if (userData['email'] != getCurrentUser()!.email) {
-      return UserTile(
-        text: userData['email'],
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatPage(recieverEmail: userData['email'], recieverID: userData['uid']),
-            ),
-          );
-        },
-      );
-    } else {
-      return const SizedBox.shrink();
-    }
   }
 }
