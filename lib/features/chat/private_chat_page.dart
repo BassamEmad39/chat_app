@@ -29,6 +29,22 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _markMessagesAsRead();
+  }
+
+  void _markMessagesAsRead() async {
+    final currentUserId = _chatService.currentUserId;
+    if (currentUserId == null) return;
+
+    List<String> ids = [currentUserId, widget.receiverID]..sort();
+    String chatRoomId = ids.join('_');
+
+    await _chatService.markMessagesAsRead(chatRoomId, currentUserId);
+  }
+
   void _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -64,12 +80,16 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
   Widget _buildMessageList() {
     final currentUserId = _chatService.currentUserId;
-    if (currentUserId == null) return const Center(child: Text('Not signed in'));
+    if (currentUserId == null) {
+      return const Center(child: Text('Not signed in'));
+    }
 
     return StreamBuilder<QuerySnapshot>(
       stream: _chatService.getPrivateMessages(currentUserId, widget.receiverID),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
         final docs = snapshot.data!.docs;
         DateTime? lastDate;
@@ -103,10 +123,15 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               children: [
                 dateDivider,
                 Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       gradient: isMe
                           ? const LinearGradient(
@@ -119,8 +144,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
                       children: [
                         if (!isMe)
                           Padding(

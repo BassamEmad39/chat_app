@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:chat_app/models/user_model.dart';
@@ -50,7 +52,7 @@ class ChatService {
 
     final timestamp = Timestamp.now();
     final currentUser = await getUserById(currentUserId!);
-    
+
     List<String> ids = [currentUserId!, receiverId]..sort();
     String chatRoomId = ids.join('_');
 
@@ -64,6 +66,7 @@ class ChatService {
           'senderUsername': currentUser?.username ?? 'Unknown',
           'message': message,
           'timestamp': timestamp,
+          'read': false, // New messages are unread by default
         });
   }
 
@@ -79,7 +82,63 @@ class ChatService {
         .snapshots();
   }
 
-  // ------------------ Groups ------------------
+  // Mark messages as read
+  Future<void> markMessagesAsRead(
+    String chatRoomId,
+    String currentUserId,
+  ) async {
+    try {
+      final messagesSnapshot = await _firestore
+          .collection('chat_rooms')
+          .doc(chatRoomId)
+          .collection('messages')
+          .where('senderId', isNotEqualTo: currentUserId)
+          .get();
+
+      final batch = _firestore.batch();
+      for (var doc in messagesSnapshot.docs) {
+        doc.data();
+        // Update all messages from the other user, regardless of read field
+        batch.update(doc.reference, {'read': true});
+      }
+
+      if (messagesSnapshot.docs.isNotEmpty) {
+        await batch.commit();
+      }
+    } catch (e) {
+      log('Error marking messages as read: $e');
+    }
+  }
+
+  // Get unread message count
+  Future<int> getUnreadCount(String userId, String otherUserId) async {
+    try {
+      List<String> ids = [userId, otherUserId]..sort();
+      String chatRoomId = ids.join('_');
+
+      final messagesSnapshot = await _firestore
+          .collection('chat_rooms')
+          .doc(chatRoomId)
+          .collection('messages')
+          .where('senderId', isNotEqualTo: userId)
+          .get();
+
+      int unreadCount = 0;
+      for (var doc in messagesSnapshot.docs) {
+        final data = doc.data();
+        // If read field doesn't exist or is false, count as unread
+        if (!data.containsKey('read') || data['read'] == false) {
+          unreadCount++;
+        }
+      }
+      return unreadCount;
+    } catch (e) {
+      log('Error getting unread count: $e');
+      return 0;
+    }
+  }
+
+  // ... rest of your group methods remain the same ...
   Future<String> createGroup(String name, List<String> members) async {
     final doc = await _firestore.collection('groups').add({
       'name': name,
@@ -138,7 +197,6 @@ class ChatService {
     return true;
   }
 
-  // ------------------ Members Stream & Admins ------------------
   Stream<List<Map<String, dynamic>>> getGroupMembersStream(String groupId) {
     return _firestore.collection('groups').doc(groupId).snapshots().asyncMap((
       doc,

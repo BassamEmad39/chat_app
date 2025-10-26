@@ -1,3 +1,7 @@
+import 'dart:developer';
+
+import 'package:chat_app/components/buttons/main_button.dart';
+import 'package:chat_app/components/inputs/name_text_form_field.dart';
 import 'package:chat_app/components/user_tile.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/private_chat_page.dart';
@@ -16,86 +20,310 @@ class ChatsTab extends StatefulWidget {
 
 class _ChatsTabState extends State<ChatsTab> {
   User? getCurrentUser() => FirebaseAuth.instance.currentUser;
+  final List<UserModel> _allUsers = [];
+  List<Map<String, dynamic>> _chattedUsersWithData = [];
+  bool _isLoading = true;
+  bool _showSearch = false;
+  final TextEditingController _searchController = TextEditingController();
+  List<UserModel> _filteredUsers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadUsers() async {
+    try {
+      final usersSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .get();
+      
+      final currentUserId = getCurrentUser()?.uid;
+      if (currentUserId == null) return;
+
+      _allUsers.clear();
+      _chattedUsersWithData.clear();
+
+      // Add all users except current user
+      for (var doc in usersSnapshot.docs) {
+        final user = UserModel.fromMap(doc.data());
+        if (user.uid != currentUserId) {
+          _allUsers.add(user);
+        }
+      }
+
+      // Find users with existing chats
+      List<Map<String, dynamic>> chattedUsers = [];
+      
+      for (var user in _allUsers) {
+        final messages = await widget.chatServices
+            .getPrivateMessages(currentUserId, user.uid)
+            .first;
+        
+        if (messages.docs.isNotEmpty) {
+          final lastMessageDoc = messages.docs.last;
+          final lastMessageData = lastMessageDoc.data() as Map<String, dynamic>;
+          
+          final unreadCount = await widget.chatServices.getUnreadCount(currentUserId, user.uid);
+          
+          chattedUsers.add({
+            'user': user,
+            'lastMessage': lastMessageData['message'] ?? '',
+            'lastMessageTime': (lastMessageData['timestamp'] as Timestamp).toDate(),
+            'senderId': lastMessageData['senderId'],
+            'unreadCount': unreadCount,
+          });
+        }
+      }
+
+      chattedUsers.sort((a, b) => b['lastMessageTime'].compareTo(a['lastMessageTime']));
+
+      setState(() {
+        _chattedUsersWithData = chattedUsers;
+        _isLoading = false;
+      });
+    } catch (e) {
+      log('Error loading users: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _startChatWithUser(UserModel user) async {
+    final currentUserId = getCurrentUser()?.uid;
+    if (currentUserId == null) return;
+
+    // Mark messages as read before opening chat
+    List<String> ids = [currentUserId, user.uid]..sort();
+    String chatRoomId = ids.join('_');
+    await widget.chatServices.markMessagesAsRead(chatRoomId, currentUserId);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrivateChatPage(
+          receiverEmail: user.email,
+          receiverID: user.uid,
+          receiverUsername: user.username,
+        ),
+      ),
+    ).then((_) {
+      // Refresh when returning from chat
+      _loadUsers();
+    });
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _showSearch = !_showSearch;
+      _searchController.clear();
+      _filteredUsers = List.from(_allUsers);
+    });
+  }
+
+  void _searchUsers(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredUsers = List.from(_allUsers);
+      });
+    } else {
+      setState(() {
+        _filteredUsers = _allUsers.where((user) {
+          return user.username.toLowerCase().contains(query.toLowerCase()) ||
+                 user.email.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = getCurrentUser()?.uid;
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    return StreamBuilder<List<UserModel>>(
-      stream: widget.chatServices.getUsersStream(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _showSearch ? 'Search Users' : 'Recent Chats',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  _showSearch ? Icons.close : Icons.search,
+                  color: const Color(0xFF06B6D4),
+                ),
+                onPressed: _toggleSearch,
+              ),
+            ],
+          ),
+        ),
 
-        final users = snapshot.data!;
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: users.map<Widget>((user) {
-            if (user.uid == currentUserId) {
-              return const SizedBox.shrink();
-            }
+        if (_showSearch) ...[
+          // Search Mode
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: NameTextFormField(
+              controller: _searchController,
+              hintText: 'Search by username or email...',
+              onChanged: _searchUsers,
+            ),
+          ),
+          _buildSearchResults(),
+        ] else ...[
+          // Recent Chats Mode
+          _buildRecentChats(),
+        ],
+      ],
+    );
+  }
 
-            return FutureBuilder<QuerySnapshot>(
-              future: widget.chatServices
-                  .getPrivateMessages(currentUserId!, user.uid)
-                  .first,
-              builder: (context, msgSnapshot) {
-                String lastMessage = '';
-                String sender = '';
-                String timestampStr = '';
-                int unread = 0;
-
-                if (msgSnapshot.hasData && msgSnapshot.data!.docs.isNotEmpty) {
-                  final lastDoc = msgSnapshot.data!.docs.last;
-                  final data = lastDoc.data() as Map<String, dynamic>;
-
-                  final timestamp = (data['timestamp'] as Timestamp).toDate();
-                  timestampStr =
-                      '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-
-                  sender = (data['senderId'] == currentUserId)
-                      ? 'You'
-                      : data['senderUsername'] ?? 'Unknown';
-                  lastMessage = data['message'] ?? '';
-                  unread = (data['senderId'] != currentUserId) ? 1 : 0;
-                }
-
-                return UserTile(
-                  text: user.username,
-                  subtitle: lastMessage.isNotEmpty
-                      ? '$sender: $lastMessage'
-                      : null,
-                  trailing: timestampStr.isNotEmpty
-                      ? Text(
-                          timestampStr,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        )
-                      : null,
-                  unreadCount: unread,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PrivateChatPage(
-                          receiverEmail: user.email,
-                          receiverID: user.uid,
-                          receiverUsername: user.username,
+  Widget _buildSearchResults() {
+    return Expanded(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Text(
+              _searchController.text.isEmpty
+                  ? 'All users (${_filteredUsers.length})'
+                  : 'Found ${_filteredUsers.length} user${_filteredUsers.length == 1 ? '' : 's'}',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ),
+          
+          Expanded(
+            child: _filteredUsers.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.person_search_rounded,
+                          size: 60,
+                          color: Colors.grey[400],
                         ),
-                      ),
-                    ).then(
-                      (_) => setState(() {}),
-                    ); // Refresh last message on return
-                  },
-                );
-              },
-            );
-          }).toList(),
-        );
-      },
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchController.text.isEmpty
+                              ? 'No other users found'
+                              : 'No users found for "${_searchController.text}"',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _filteredUsers.length,
+                    itemBuilder: (context, index) {
+                      final user = _filteredUsers[index];
+                      return UserTile(
+                        text: user.username,
+                        subtitle: user.email,
+                        onTap: () => _startChatWithUser(user),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentChats() {
+    if (_chattedUsersWithData.isEmpty) {
+      return Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No chats yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Start a conversation with someone',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 30),
+            MainButton(
+              text: 'Search Users',
+              onPressed: _toggleSearch,
+              width: 200,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Expanded(
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        children: _chattedUsersWithData.map((chatData) {
+          final user = chatData['user'] as UserModel;
+          final lastMessage = chatData['lastMessage'] as String;
+          final lastMessageTime = chatData['lastMessageTime'] as DateTime;
+          final senderId = chatData['senderId'] as String;
+          final unreadCount = chatData['unreadCount'] as int;
+
+          final currentUserId = getCurrentUser()?.uid;
+          final sender = (senderId == currentUserId) ? 'You' : user.username;
+          final timestampStr = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
+
+          return UserTile(
+            text: user.username,
+            subtitle: '$sender: $lastMessage',
+            trailing: Text(
+              timestampStr,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+            unreadCount: unreadCount,
+            onTap: () => _startChatWithUser(user),
+          );
+        }).toList(),
+      ),
     );
   }
 }

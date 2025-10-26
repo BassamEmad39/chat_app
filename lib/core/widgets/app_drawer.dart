@@ -226,7 +226,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
 
-                  // BOTTOM SECTION WITH LOGOUT
                   Container(
                     margin: const EdgeInsets.all(16),
                     padding: const EdgeInsets.all(16),
