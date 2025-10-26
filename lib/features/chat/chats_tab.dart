@@ -1,6 +1,7 @@
 import 'package:chat_app/components/user_tile.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/private_chat_page.dart';
+import 'package:chat_app/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ class _ChatsTabState extends State<ChatsTab> {
   Widget build(BuildContext context) {
     final currentUserId = getCurrentUser()?.uid;
 
-    return StreamBuilder<List<Map<String, dynamic>>>(
+    return StreamBuilder<List<UserModel>>(
       stream: widget.chatServices.getUsersStream(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -30,14 +31,14 @@ class _ChatsTabState extends State<ChatsTab> {
         final users = snapshot.data!;
         return ListView(
           padding: const EdgeInsets.all(20),
-          children: users.map<Widget>((userData) {
-            if (userData['uid'] == currentUserId) {
+          children: users.map<Widget>((user) {
+            if (user.uid == currentUserId) {
               return const SizedBox.shrink();
             }
 
             return FutureBuilder<QuerySnapshot>(
               future: widget.chatServices
-                  .getPrivateMessages(currentUserId!, userData['uid'])
+                  .getPrivateMessages(currentUserId!, user.uid)
                   .first,
               builder: (context, msgSnapshot) {
                 String lastMessage = '';
@@ -55,13 +56,13 @@ class _ChatsTabState extends State<ChatsTab> {
 
                   sender = (data['senderId'] == currentUserId)
                       ? 'You'
-                      : data['senderEmail'] ?? '';
+                      : data['senderUsername'] ?? 'Unknown';
                   lastMessage = data['message'] ?? '';
                   unread = (data['senderId'] != currentUserId) ? 1 : 0;
                 }
 
                 return UserTile(
-                  text: userData['email'],
+                  text: user.username,
                   subtitle: lastMessage.isNotEmpty
                       ? '$sender: $lastMessage'
                       : null,
@@ -80,8 +81,9 @@ class _ChatsTabState extends State<ChatsTab> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => PrivateChatPage(
-                          recieverEmail: userData['email'],
-                          recieverID: userData['uid'],
+                          receiverEmail: user.email,
+                          receiverID: user.uid,
+                          receiverUsername: user.username,
                         ),
                       ),
                     ).then(

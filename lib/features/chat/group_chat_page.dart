@@ -94,11 +94,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
                   return ListTile(
                     title: Text(
-                      member['email'],
+                      member['username'],
                       style: const TextStyle(fontSize: 14),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    subtitle: isAdmin ? const Text("Admin") : null,
+                    subtitle: Text(
+                      isAdmin ? "Admin" : "Member",
+                      style: TextStyle(
+                        color: isAdmin ? Colors.blue : Colors.grey,
+                      ),
+                    ),
                     trailing: !isMe && canManage
                         ? PopupMenuButton<String>(
                             onSelected: (value) async {
@@ -248,7 +253,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                                         bottom: 4.0,
                                       ),
                                       child: Text(
-                                        data['senderEmail'] ?? 'Unknown',
+                                        data['senderUsername'] ?? 'Unknown',
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,

@@ -5,10 +5,11 @@ import 'package:chat_app/core/constants/app_assets.dart';
 import 'package:chat_app/core/extensions/navigations.dart';
 import 'package:chat_app/core/routers/routers.dart';
 import 'package:chat_app/core/utils/text_styles.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_app/features/auth/cubit/auth_cubit.dart';
+import 'package:chat_app/features/auth/cubit/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,8 +25,19 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ModalProgressHUD(
-      inAsyncCall: isLoading,
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthLoading) {
+          setState(() => isLoading = true);
+        } else if (state is AuthAuthenticated) {
+          setState(() => isLoading = false);
+          showSuccessDialog(context, 'Login successful!');
+          context.pushWithReplacement(Routes.home);
+        } else if (state is AuthError) {
+          setState(() => isLoading = false);
+          showErrorDialog(context, state.message);
+        }
+      },
       child: Scaffold(
         body: Container(
           decoration: const BoxDecoration(
@@ -150,26 +162,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Future<void> _handleLogin() async {
+  void _handleLogin() {
     if (formKey.currentState!.validate()) {
-      setState(() => isLoading = true);
-      try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email!,
-          password: password!,
-        );
-        showSuccessDialog(context, 'Login successful!');
-        context.pushWithReplacement(Routes.home);
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'user-not-found') {
-          showErrorDialog(context, 'No user found for that email.');
-        } else if (e.code == 'wrong-password') {
-          showErrorDialog(context, 'Wrong password provided.');
-        } else {
-          showErrorDialog(context, e.message ?? 'Something went wrong.');
-        }
-      }
-      setState(() => isLoading = false);
+      context.read<AuthCubit>().loginWithEmailAndPassword(
+        email: email!,
+        password: password!,
+      );
     }
   }
 }

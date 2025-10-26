@@ -1,11 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:ui';
-import 'package:chat_app/core/utils/app_colors.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:chat_app/core/routers/routers.dart';
 import 'package:chat_app/core/extensions/navigations.dart';
+import 'package:chat_app/features/auth/cubit/auth_cubit.dart';
+import 'package:chat_app/features/auth/cubit/auth_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -13,151 +14,287 @@ class AppDrawer extends StatelessWidget {
   Future<void> _confirmLogout(BuildContext context) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          "Logout",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: const Text("Are you sure you want to logout?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text("Cancel", style: TextStyle(color: Colors.black)),
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          backgroundColor: Colors.white.withValues(alpha: 0.9),
+          title: const Text(
+            "Logout",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF06B6D4),
+            ),
+          ),
+          content: const Text(
+            "Are you sure you want to logout?",
+            style: TextStyle(color: Colors.black87),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text("Logout", style: TextStyle(color: Colors.white)),
-          ),
-        ],
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text(
+                "Logout",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
     if (shouldLogout == true) {
-      await FirebaseAuth.instance.signOut();
+      context.read<AuthCubit>().signOut();
       context.pushWithReplacement(Routes.login);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        final currentUser = (state is AuthAuthenticated) ? state.user : null;
 
-    return Drawer(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)], // cyan → purple
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // HEADER
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.whiteColor.withValues(alpha: 0.2),
-                      AppColors.whiteColor.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    bottomRight: Radius.circular(40),
-                    bottomLeft: Radius.circular(40),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Signed in as",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user?.email ?? "No Email",
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+        return Drawer(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // HEADER WITH USER INFO
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.15),
+                          Colors.white.withValues(alpha: 0.05),
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        bottomRight: Radius.circular(40),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // MENU ITEMS
-              Expanded(
-                child: ListView(
-                  children: [
-                    _buildDrawerItem(
-                      icon: Icons.home_rounded,
-                      text: 'Home',
-                      onTap: () {},
+                    child: Row(
+                      children: [
+                        // Avatar with username initial
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF7C3AED), Color(0xFF06B6D4)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              currentUser?.username.isNotEmpty == true
+                                  ? currentUser!.username[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                currentUser?.username ?? "Guest",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                currentUser?.email ?? "No Email",
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  "Online",
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    _buildDrawerItem(
-                      icon: Icons.settings_rounded,
-                      text: 'Settings',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ),
-
-              // LOGOUT
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    shadowColor: Colors.black45,
-                    elevation: 6,
                   ),
-                  onPressed: () => _confirmLogout(context),
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  label: const Text(
-                    "Logout",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+
+                  const SizedBox(height: 24),
+
+                  // MENU ITEMS
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      children: [
+                        _buildDrawerItem(
+                          icon: Icons.home_rounded,
+                          text: 'Home',
+                          onTap: () {
+                            Navigator.pop(context); 
+                          },
+                          isSelected: true,
+                        ),
+                        _buildDrawerItem(
+                          icon: Icons.person_rounded,
+                          text: 'My Profile',
+                          onTap: () {
+                            // TODO: Add profile page navigation
+                            Navigator.pop(context);
+                          },
+                        ),
+                       
+                        
+                        _buildDrawerItem(
+                          icon: Icons.settings_rounded,
+                          text: 'Settings',
+                          onTap: () {
+                            // TODO: Add settings page
+                            Navigator.pop(context);
+                          },
+                        ),
+                       
+                      ],
                     ),
                   ),
-                ),
+
+                  // BOTTOM SECTION WITH LOGOUT
+                  Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // App info
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_rounded,
+                              color: Colors.white.withValues(alpha: 0.7),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              "ChatApp v1.0",
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Logout button
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent.withValues(
+                              alpha: 0.9,
+                            ),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                            shadowColor: Colors.redAccent.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                          onPressed: () => _confirmLogout(context),
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          label: const Text(
+                            "Logout",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -165,42 +302,79 @@ class AppDrawer extends StatelessWidget {
     required IconData icon,
     required String text,
     required VoidCallback onTap,
+    bool isSelected = false,
+    int badgeCount = 0,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Material(
-            color: Colors.white.withValues( alpha:0.1),
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.1),
             child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(16),
               splashColor: Colors.white24,
+              highlightColor: Colors.white12,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 14,
-                  horizontal: 12,
+                  vertical: 16,
+                  horizontal: 16,
                 ),
                 child: Row(
                   children: [
-                    Icon(icon, color: Colors.white, size: 22),
-                    const SizedBox(width: 14),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 16),
                     Text(
                       text,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white70,
-                      size: 16,
-                    ),
+                    if (badgeCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    if (badgeCount == 0)
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white.withValues(alpha: 0.6),
+                        size: 16,
+                      ),
                   ],
                 ),
               ),

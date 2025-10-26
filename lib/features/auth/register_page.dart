@@ -6,11 +6,11 @@ import 'package:chat_app/core/extensions/navigations.dart';
 import 'package:chat_app/core/routers/routers.dart';
 import 'package:chat_app/core/utils/text_styles.dart';
 import 'package:chat_app/core/utils/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_app/features/auth/cubit/auth_cubit.dart';
+import 'package:chat_app/features/auth/cubit/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -20,15 +20,25 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  String? email, password;
+  String? email, password, username;
   final formKey = GlobalKey<FormState>();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
-    return ModalProgressHUD(
-      inAsyncCall: isLoading,
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthLoading) {
+          setState(() => isLoading = true);
+        } else if (state is AuthAuthenticated) {
+          setState(() => isLoading = false);
+          showSuccessDialog(context, 'Registration successful!');
+          context.pushWithReplacement(Routes.home);
+        } else if (state is AuthError) {
+          setState(() => isLoading = false);
+          showErrorDialog(context, state.message);
+        }
+      },
       child: Scaffold(
         body: Container(
           decoration: const BoxDecoration(gradient: AppColors.mainGradient),
@@ -83,6 +93,20 @@ class _RegisterPageState extends State<RegisterPage> {
                           child: Column(
                             children: [
                               NameTextFormField(
+                                hintText: 'Username',
+                                onChanged: (value) => username = value,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please choose a username';
+                                  }
+                                  if (value.length < 3) {
+                                    return 'Username must be at least 3 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const Gap(20),
+                              NameTextFormField(
                                 hintText: 'Email',
                                 onChanged: (value) => email = value,
                                 validator: (value) {
@@ -100,6 +124,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter your password';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Password must be at least 6 characters';
                                   }
                                   return null;
                                 },
@@ -151,30 +178,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _handleRegister() async {
     if (formKey.currentState!.validate()) {
-      setState(() => isLoading = true);
-      try {
-        UserCredential userCredential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: email!, password: password!);
-
-        _firestore.collection('Users').doc(userCredential.user!.uid).set({
-          'uid': userCredential.user!.uid,
-          'email': email,
-        });
-
-        showSuccessDialog(context, 'Registration successful!');
-        context.pushWithReplacement(Routes.home);
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'weak-password') {
-          showErrorDialog(context, 'The password provided is too weak.');
-        } else if (e.code == 'invalid-email') {
-          showErrorDialog(context, 'The email address is not valid.');
-        } else if (e.code == 'email-already-in-use') {
-          showErrorDialog(context, 'An account already exists for that email.');
-        } else {
-          showErrorDialog(context, e.message ?? 'Something went wrong');
-        }
-      }
-      setState(() => isLoading = false);
+      context.read<AuthCubit>().registerWithEmailAndPassword(
+        email: email!,
+        password: password!,
+        username: username!,
+      );
     }
   }
 }

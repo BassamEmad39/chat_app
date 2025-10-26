@@ -53,7 +53,7 @@ class _GroupListPageState extends State<GroupListPage> {
 
                   sender = (lastData['senderId'] == _chatService.currentUserId)
                       ? 'You'
-                      : lastData['senderEmail'] ?? '';
+                      : lastData['senderUsername'] ?? 'Unknown';
 
                   lastMessage = lastData['message'] ?? '';
                   unread = (lastData['senderId'] != _chatService.currentUserId)

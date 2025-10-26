@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class PrivateChatPage extends StatefulWidget {
-  final String recieverEmail;
-  final String recieverID;
+  final String receiverEmail;
+  final String receiverID;
+  final String receiverUsername;
 
   const PrivateChatPage({
     super.key,
-    required this.recieverEmail,
-    required this.recieverID,
+    required this.receiverEmail,
+    required this.receiverID,
+    required this.receiverUsername,
   });
 
   @override
@@ -30,7 +32,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   void _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    await _chatService.sendPrivateMessage(widget.recieverID, text);
+    await _chatService.sendPrivateMessage(widget.receiverID, text);
     _messageController.clear();
   }
 
@@ -39,7 +41,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(widget.recieverEmail),
+        title: Text(widget.receiverUsername),
         elevation: 0,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -65,7 +67,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     if (currentUserId == null) return const Center(child: Text('Not signed in'));
 
     return StreamBuilder<QuerySnapshot>(
-      stream: _chatService.getPrivateMessages(currentUserId, widget.recieverID),
+      stream: _chatService.getPrivateMessages(currentUserId, widget.receiverID),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
@@ -120,6 +122,18 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       crossAxisAlignment:
                           isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                       children: [
+                        if (!isMe)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Text(
+                              data['senderUsername'] ?? 'Unknown',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
                         Text(
                           data['message'] ?? '',
                           style: TextStyle(

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_app/models/user_model.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -8,9 +9,9 @@ class ChatService {
   String? get currentUserId => _auth.currentUser?.uid;
 
   // ------------------ Users ------------------
-  Stream<List<Map<String, dynamic>>> getUsersStream() {
+  Stream<List<UserModel>> getUsersStream() {
     return _firestore.collection("Users").snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => doc.data()).toList();
+      return snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
     });
   }
 
@@ -31,11 +32,25 @@ class ChatService {
     return snap.docs.first.id;
   }
 
+  Future<UserModel?> getUserById(String userId) async {
+    try {
+      final doc = await _firestore.collection('Users').doc(userId).get();
+      if (doc.exists) {
+        return UserModel.fromMap(doc.data()!);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ------------------ Private Messages ------------------
   Future<void> sendPrivateMessage(String receiverId, String message) async {
     if (currentUserId == null) return;
 
     final timestamp = Timestamp.now();
+    final currentUser = await getUserById(currentUserId!);
+    
     List<String> ids = [currentUserId!, receiverId]..sort();
     String chatRoomId = ids.join('_');
 
@@ -46,6 +61,7 @@ class ChatService {
         .add({
           'senderId': currentUserId,
           'senderEmail': _auth.currentUser!.email,
+          'senderUsername': currentUser?.username ?? 'Unknown',
           'message': message,
           'timestamp': timestamp,
         });
@@ -68,7 +84,7 @@ class ChatService {
     final doc = await _firestore.collection('groups').add({
       'name': name,
       'members': members,
-      'admins': [currentUserId], // creator is admin
+      'admins': [currentUserId],
       'createdAt': Timestamp.now(),
     });
     return doc.id;
@@ -94,6 +110,7 @@ class ChatService {
   Future<void> sendGroupMessage(String groupId, String message) async {
     if (currentUserId == null) return;
     final timestamp = Timestamp.now();
+    final currentUser = await getUserById(currentUserId!);
 
     await _firestore
         .collection('groups')
@@ -102,6 +119,7 @@ class ChatService {
         .add({
           'senderId': currentUserId,
           'senderEmail': _auth.currentUser!.email,
+          'senderUsername': currentUser?.username ?? 'Unknown',
           'message': message,
           'timestamp': timestamp,
         });
@@ -133,15 +151,15 @@ class ChatService {
 
       List<Map<String, dynamic>> members = [];
       for (var id in memberIds) {
-        final userSnap = await _firestore.collection('Users').doc(id).get();
-        if (!userSnap.exists) continue;
+        final user = await getUserById(id);
+        if (user == null) continue;
 
-        final email = userSnap.data()?['email'] ?? 'Unknown';
         final isAdmin = adminIds.contains(id);
         final canManage = adminIds.contains(currentUserId);
         members.add({
           'id': id,
-          'email': email,
+          'email': user.email,
+          'username': user.username,
           'isAdmin': isAdmin,
           'canManage': canManage,
         });
