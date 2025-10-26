@@ -20,8 +20,9 @@ class _GroupListPageState extends State<GroupListPage> {
     return StreamBuilder<QuerySnapshot>(
       stream: _chatService.getUserGroups(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
 
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) return const Center(child: Text("No groups yet"));

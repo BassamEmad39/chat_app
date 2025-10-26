@@ -23,15 +23,17 @@ class _ChatsTabState extends State<ChatsTab> {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: widget.chatServices.getUsersStream(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
 
         final users = snapshot.data!;
         return ListView(
           padding: const EdgeInsets.all(20),
           children: users.map<Widget>((userData) {
-            if (userData['uid'] == currentUserId)
+            if (userData['uid'] == currentUserId) {
               return const SizedBox.shrink();
+            }
 
             return FutureBuilder<QuerySnapshot>(
               future: widget.chatServices

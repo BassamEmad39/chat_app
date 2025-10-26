@@ -34,7 +34,7 @@ class UserTile extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -45,7 +45,7 @@ class UserTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
             const SizedBox(width: 12),
