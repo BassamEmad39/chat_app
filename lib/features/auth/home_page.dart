@@ -54,7 +54,6 @@ class _HomePageState extends State<HomePage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -105,7 +104,6 @@ class _HomePageState extends State<HomePage>
                     ),
                   ),
                   const Gap(20),
-                  // TabBar
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(

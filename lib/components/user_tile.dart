@@ -13,7 +13,7 @@ class UserTile extends StatelessWidget {
 
   final String text;
   final String? subtitle;
-  final String? time; // New: timestamp of last message
+  final String? time; 
   final Widget? trailing;
   final int unreadCount;
   final void Function()? onTap;

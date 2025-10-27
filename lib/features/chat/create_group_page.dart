@@ -1,0 +1,388 @@
+import 'dart:developer';
+
+import 'package:chat_app/components/buttons/main_button.dart';
+import 'package:chat_app/components/inputs/name_text_form_field.dart';
+import 'package:chat_app/features/chat/chat_services.dart';
+import 'package:chat_app/models/user_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+class CreateGroupPage extends StatefulWidget {
+  const CreateGroupPage({super.key});
+
+  @override
+  State<CreateGroupPage> createState() => _CreateGroupPageState();
+}
+
+class _CreateGroupPageState extends State<CreateGroupPage> {
+  final TextEditingController _groupNameController = TextEditingController();
+  final ChatService _chatService = ChatService();
+  final List<UserModel> _allUsers = [];
+  final Map<String, bool> _selectedUsers = {};
+  bool _isLoading = true;
+  bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  @override
+  void dispose() {
+    _groupNameController.dispose();
+    super.dispose();
+  }
+
+  void _loadUsers() async {
+    try {
+      final usersSnapshot = await FirebaseFirestore.instance
+          .collection('Users')
+          .get();
+
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId == null) return;
+
+      _allUsers.clear();
+      _selectedUsers.clear();
+
+      for (var doc in usersSnapshot.docs) {
+        final user = UserModel.fromMap(doc.data());
+        if (user.uid != currentUserId) {
+          _allUsers.add(user);
+          _selectedUsers[user.uid] = false;
+        }
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      log('Error loading users: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _createGroup() async {
+    final groupName = _groupNameController.text.trim();
+    if (groupName.isEmpty) {
+      _showError('Please enter a group name');
+      return;
+    }
+
+    final selectedUserIds = _selectedUsers.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
+
+    if (selectedUserIds.isEmpty) {
+      _showError('Please select at least one member');
+      return;
+    }
+
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
+
+    setState(() {
+      _isCreating = true;
+    });
+
+    try {
+      final allMembers = [...selectedUserIds, currentUserId];
+
+      await _chatService.createGroup(groupName, allMembers);
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Group "$groupName" created successfully!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      _showError('Failed to create group: $e');
+    } finally {
+      setState(() {
+        _isCreating = false;
+      });
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleUserSelection(String userId) {
+    setState(() {
+      _selectedUsers[userId] = !(_selectedUsers[userId] ?? false);
+    });
+  }
+
+  int get _selectedCount {
+    return _selectedUsers.values.where((isSelected) => isSelected).length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text(
+          'Create New Group',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: NameTextFormField(
+                            controller: _groupNameController,
+                            hintText: 'Enter group name...',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$_selectedCount user${_selectedCount == 1 ? '' : 's'} selected',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Expanded(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: _allUsers.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.group_off_rounded,
+                                    size: 60,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No other users found',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Select Members',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    itemCount: _allUsers.length,
+                                    itemBuilder: (context, index) {
+                                      final user = _allUsers[index];
+                                      final isSelected =
+                                          _selectedUsers[user.uid] ?? false;
+
+                                      return Container(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: isSelected
+                                              ? const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF06B6D4),
+                                                    Color(0xFF8B5CF6),
+                                                  ],
+                                                  begin: Alignment.centerLeft,
+                                                  end: Alignment.centerRight,
+                                                )
+                                              : null,
+                                          color: isSelected
+                                              ? null
+                                              : Colors.grey[50],
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withValues(alpha: 0.1),
+                                                    blurRadius: 6,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: ListTile(
+                                          leading: CircleAvatar(
+                                            backgroundColor: isSelected
+                                                ? Colors.white
+                                                : const Color(0xFF06B6D4),
+                                            child: Text(
+                                              user.username[0].toUpperCase(),
+                                              style: TextStyle(
+                                                color: isSelected
+                                                    ? const Color(0xFF06B6D4)
+                                                    : Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          title: Text(
+                                            user.username,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : Colors.black87,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          subtitle: Text(
+                                            user.email,
+                                            style: TextStyle(
+                                              color: isSelected
+                                                  ? Colors.white70
+                                                  : Colors.grey[600],
+                                            ),
+                                          ),
+                                          trailing: Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : Colors.transparent,
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? Colors.white
+                                                    : Colors.grey,
+                                                width: 2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: isSelected
+                                                ? const Icon(
+                                                    Icons.check,
+                                                    size: 16,
+                                                    color: Color(0xFF06B6D4),
+                                                  )
+                                                : null,
+                                          ),
+                                          onTap: () =>
+                                              _toggleUserSelection(user.uid),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                          offset: Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: MainButton(
+                      text: _isCreating ? 'Creating Group...' : 'Create Group',
+                      onPressed: _isCreating ? () {} : _createGroup,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}

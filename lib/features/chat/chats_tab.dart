@@ -71,7 +71,6 @@ class _ChatsTabState extends State<ChatsTab> {
     final currentUserId = getCurrentUser()?.uid;
     if (currentUserId == null) return;
 
-    // Mark messages as read before opening chat
     List<String> ids = [currentUserId, user.uid]..sort();
     String chatRoomId = ids.join('_');
     await widget.chatServices.markMessagesAsRead(chatRoomId, currentUserId);
@@ -86,7 +85,6 @@ class _ChatsTabState extends State<ChatsTab> {
         ),
       ),
     );
-    // No need to refresh manually - streams will handle it
   }
 
   void _toggleSearch() {
@@ -120,7 +118,6 @@ class _ChatsTabState extends State<ChatsTab> {
 
     return Column(
       children: [
-        // Header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
@@ -146,7 +143,6 @@ class _ChatsTabState extends State<ChatsTab> {
         ),
 
         if (_showSearch) ...[
-          // Search Mode
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: NameTextFormField(
@@ -157,7 +153,6 @@ class _ChatsTabState extends State<ChatsTab> {
           ),
           _buildSearchResults(),
         ] else ...[
-          // Recent Chats Mode - Now using StreamBuilder for real-time updates
           _buildRecentChatsStream(),
         ],
       ],
@@ -245,7 +240,6 @@ class _ChatsTabState extends State<ChatsTab> {
           return _buildEmptyState();
         }
 
-        // For each user, create a stream that combines their messages and unread count
         return Expanded(
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -254,7 +248,7 @@ class _ChatsTabState extends State<ChatsTab> {
                 stream: widget.chatServices.getPrivateMessages(currentUserId, user.uid),
                 builder: (context, messagesSnapshot) {
                   if (!messagesSnapshot.hasData || messagesSnapshot.data!.docs.isEmpty) {
-                    return const SizedBox.shrink(); // Don't show users with no messages
+                    return const SizedBox.shrink(); 
                   }
 
                   final messages = messagesSnapshot.data!.docs;

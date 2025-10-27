@@ -18,13 +18,11 @@ class AuthCubit extends Cubit<AuthState> {
       emit(AuthUnAuthenticated());
     } else {
       try {
-        // Get user data from Firestore
         final userDoc = await _firestore.collection('Users').doc(firebaseUser.uid).get();
         if (userDoc.exists) {
           final user = UserModel.fromMap(userDoc.data()!);
           emit(AuthAuthenticated(user));
         } else {
-          // This shouldn't happen, but if it does, sign out
           await _auth.signOut();
           emit(AuthUnAuthenticated());
         }
@@ -41,7 +39,6 @@ class AuthCubit extends Cubit<AuthState> {
   }) async {
     emit(AuthLoading());
     try {
-      // Check if username already exists
       final usernameQuery = await _firestore
           .collection('Users')
           .where('username', isEqualTo: username)
@@ -52,13 +49,11 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      // Create user in Firebase Auth
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Create user profile in Firestore
       final user = UserModel(
         uid: userCredential.user!.uid,
         email: email,
@@ -94,7 +89,6 @@ class AuthCubit extends Cubit<AuthState> {
         email: email,
         password: password,
       );
-      // State will be updated by authStateChanges listener
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Login failed.';
       if (e.code == 'user-not-found') {
@@ -110,7 +104,6 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> signOut() async {
     await _auth.signOut();
-    // State will be updated by authStateChanges listener
   }
 
   UserModel? get currentUser {

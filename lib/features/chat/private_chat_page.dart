@@ -57,7 +57,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     await _chatService.sendPrivateMessage(widget.receiverID, text);
     _messageController.clear();
     
-    // Scroll to bottom after sending
     _scrollToBottom();
   }
 
@@ -126,7 +125,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
 
         _messages = snapshot.data!.docs;
         
-        // Scroll to bottom when new messages load
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });

@@ -89,7 +89,6 @@ class AppDrawer extends StatelessWidget {
             child: SafeArea(
               child: Column(
                 children: [
-                  // HEADER WITH USER INFO
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -107,7 +106,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // Avatar with username initial
                         Container(
                           width: 60,
                           height: 60,
@@ -190,7 +188,6 @@ class AppDrawer extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // MENU ITEMS
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -239,7 +236,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // App info
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -259,7 +255,6 @@ class AppDrawer extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        // Logout button
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent.withValues(

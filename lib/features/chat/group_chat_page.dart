@@ -2,6 +2,7 @@ import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class GroupChatPage extends StatefulWidget {
   final String groupId;
@@ -20,12 +21,47 @@ class GroupChatPage extends StatefulWidget {
 class _GroupChatPageState extends State<GroupChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ChatService _chatService = ChatService();
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  
+  List<DocumentSnapshot> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _markMessagesAsRead();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _markMessagesAsRead() async {
+    final currentUserId = _chatService.currentUserId;
+    if (currentUserId == null) return;
+
+    await _chatService.markGroupMessagesAsRead(widget.groupId, currentUserId);
+  }
 
   void sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     await _chatService.sendGroupMessage(widget.groupId, text);
     _controller.clear();
+    
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    if (_messages.isNotEmpty) {
+      _itemScrollController.scrollTo(
+        index: _messages.length - 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void addMember() async {
@@ -179,117 +215,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           Expanded(
             child: Container(
               color: Colors.white,
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _chatService.getGroupMessages(widget.groupId),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final docs = snapshot.data!.docs;
-                  DateTime? lastDate;
-
-                  return ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      final isMe =
-                          data['senderId'] == _chatService.currentUserId;
-                      final timestamp = (data['timestamp'] as Timestamp)
-                          .toDate();
-
-                      Widget dateDivider = const SizedBox();
-                      if (lastDate == null ||
-                          !isSameDay(lastDate!, timestamp)) {
-                        lastDate = timestamp;
-                        dateDivider = Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Center(
-                            child: Text(
-                              DateFormat('yyyy/MM/dd').format(timestamp),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          dateDivider,
-                          Align(
-                            alignment: isMe
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: isMe
-                                    ? const LinearGradient(
-                                        colors: [Colors.cyan, Colors.purple],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      )
-                                    : null,
-                                color: isMe ? null : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: isMe
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  if (!isMe)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 4.0,
-                                      ),
-                                      child: Text(
-                                        data['senderUsername'] ?? 'Unknown',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ),
-                                  Text(
-                                    data['message'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: isMe
-                                          ? Colors.white
-                                          : Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    DateFormat('HH:mm').format(timestamp),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: isMe
-                                          ? Colors.white70
-                                          : Colors.black45,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
+              child: _buildMessageList(),
             ),
           ),
           SafeArea(
@@ -305,6 +231,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         hintText: "Type a message...",
                         border: InputBorder.none,
                       ),
+                      onSubmitted: (value) => sendMessage(),
                     ),
                   ),
                   IconButton(
@@ -317,6 +244,123 @@ class _GroupChatPageState extends State<GroupChatPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessageList() {
+    final currentUserId = _chatService.currentUserId;
+    if (currentUserId == null) {
+      return const Center(child: Text('Not signed in'));
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _chatService.getGroupMessages(widget.groupId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        _messages = snapshot.data!.docs;
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+
+        DateTime? lastDate;
+
+        return ScrollablePositionedList.builder(
+          itemScrollController: _itemScrollController,
+          itemPositionsListener: _itemPositionsListener,
+          padding: const EdgeInsets.all(12),
+          itemCount: _messages.length,
+          itemBuilder: (context, index) {
+            final doc = _messages[index];
+            final data = doc.data() as Map<String, dynamic>;
+            final isMe = data['senderId'] == currentUserId;
+            final timestamp = (data['timestamp'] as Timestamp).toDate();
+
+            Widget dateDivider = const SizedBox();
+            if (lastDate == null || !isSameDay(lastDate!, timestamp)) {
+              lastDate = timestamp;
+              dateDivider = Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Center(
+                  child: Text(
+                    DateFormat('yyyy/MM/dd').format(timestamp),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                dateDivider,
+                Align(
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: isMe
+                          ? const LinearGradient(
+                              colors: [Colors.cyan, Colors.purple],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isMe ? null : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        if (!isMe)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Text(
+                              data['senderUsername'] ?? 'Unknown',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          data['message'] ?? '',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: isMe ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat('HH:mm').format(timestamp),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isMe ? Colors.white70 : Colors.black45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
