@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:chat_app/components/buttons/main_button.dart';
 import 'package:chat_app/components/inputs/name_text_form_field.dart';
 import 'package:chat_app/components/user_tile.dart';
@@ -21,7 +20,6 @@ class ChatsTab extends StatefulWidget {
 class _ChatsTabState extends State<ChatsTab> {
   User? getCurrentUser() => FirebaseAuth.instance.currentUser;
   final List<UserModel> _allUsers = [];
-  List<Map<String, dynamic>> _chattedUsersWithData = [];
   bool _isLoading = true;
   bool _showSearch = false;
   final TextEditingController _searchController = TextEditingController();
@@ -30,7 +28,7 @@ class _ChatsTabState extends State<ChatsTab> {
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadAllUsers();
   }
 
   @override
@@ -39,7 +37,7 @@ class _ChatsTabState extends State<ChatsTab> {
     super.dispose();
   }
 
-  void _loadUsers() async {
+  void _loadAllUsers() async {
     try {
       final usersSnapshot = await FirebaseFirestore.instance
           .collection('Users')
@@ -49,9 +47,7 @@ class _ChatsTabState extends State<ChatsTab> {
       if (currentUserId == null) return;
 
       _allUsers.clear();
-      _chattedUsersWithData.clear();
-
-      // Add all users except current user
+      
       for (var doc in usersSnapshot.docs) {
         final user = UserModel.fromMap(doc.data());
         if (user.uid != currentUserId) {
@@ -59,35 +55,9 @@ class _ChatsTabState extends State<ChatsTab> {
         }
       }
 
-      // Find users with existing chats
-      List<Map<String, dynamic>> chattedUsers = [];
-      
-      for (var user in _allUsers) {
-        final messages = await widget.chatServices
-            .getPrivateMessages(currentUserId, user.uid)
-            .first;
-        
-        if (messages.docs.isNotEmpty) {
-          final lastMessageDoc = messages.docs.last;
-          final lastMessageData = lastMessageDoc.data() as Map<String, dynamic>;
-          
-          final unreadCount = await widget.chatServices.getUnreadCount(currentUserId, user.uid);
-          
-          chattedUsers.add({
-            'user': user,
-            'lastMessage': lastMessageData['message'] ?? '',
-            'lastMessageTime': (lastMessageData['timestamp'] as Timestamp).toDate(),
-            'senderId': lastMessageData['senderId'],
-            'unreadCount': unreadCount,
-          });
-        }
-      }
-
-      chattedUsers.sort((a, b) => b['lastMessageTime'].compareTo(a['lastMessageTime']));
-
       setState(() {
-        _chattedUsersWithData = chattedUsers;
         _isLoading = false;
+        _filteredUsers = List.from(_allUsers);
       });
     } catch (e) {
       log('Error loading users: $e');
@@ -115,10 +85,8 @@ class _ChatsTabState extends State<ChatsTab> {
           receiverUsername: user.username,
         ),
       ),
-    ).then((_) {
-      // Refresh when returning from chat
-      _loadUsers();
-    });
+    );
+    // No need to refresh manually - streams will handle it
   }
 
   void _toggleSearch() {
@@ -189,8 +157,8 @@ class _ChatsTabState extends State<ChatsTab> {
           ),
           _buildSearchResults(),
         ] else ...[
-          // Recent Chats Mode
-          _buildRecentChats(),
+          // Recent Chats Mode - Now using StreamBuilder for real-time updates
+          _buildRecentChatsStream(),
         ],
       ],
     );
@@ -256,73 +224,112 @@ class _ChatsTabState extends State<ChatsTab> {
     );
   }
 
-  Widget _buildRecentChats() {
-    if (_chattedUsersWithData.isEmpty) {
-      return Expanded(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline_rounded,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No chats yet',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Start a conversation with someone',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
-            ),
-            const SizedBox(height: 30),
-            MainButton(
-              text: 'Search Users',
-              onPressed: _toggleSearch,
-              width: 200,
-            ),
-          ],
-        ),
-      );
+  Widget _buildRecentChatsStream() {
+    final currentUserId = getCurrentUser()?.uid;
+    if (currentUserId == null) {
+      return const Expanded(child: Center(child: Text('Not signed in')));
     }
 
+    return StreamBuilder<List<UserModel>>(
+      stream: widget.chatServices.getUsersStream(),
+      builder: (context, usersSnapshot) {
+        if (!usersSnapshot.hasData) {
+          return const Expanded(child: Center(child: CircularProgressIndicator()));
+        }
+
+        final allUsers = usersSnapshot.data!
+            .where((user) => user.uid != currentUserId)
+            .toList();
+
+        if (allUsers.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // For each user, create a stream that combines their messages and unread count
+        return Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: allUsers.map((user) {
+              return StreamBuilder<QuerySnapshot>(
+                stream: widget.chatServices.getPrivateMessages(currentUserId, user.uid),
+                builder: (context, messagesSnapshot) {
+                  if (!messagesSnapshot.hasData || messagesSnapshot.data!.docs.isEmpty) {
+                    return const SizedBox.shrink(); // Don't show users with no messages
+                  }
+
+                  final messages = messagesSnapshot.data!.docs;
+                  final lastMessageDoc = messages.last;
+                  final lastMessageData = lastMessageDoc.data() as Map<String, dynamic>;
+
+                  return FutureBuilder<int>(
+                    future: widget.chatServices.getUnreadCount(currentUserId, user.uid),
+                    builder: (context, unreadSnapshot) {
+                      final lastMessage = lastMessageData['message'] ?? '';
+                      final lastMessageTime = (lastMessageData['timestamp'] as Timestamp).toDate();
+                      final senderId = lastMessageData['senderId'];
+                      final unreadCount = unreadSnapshot.data ?? 0;
+                      
+                      final sender = (senderId == currentUserId) ? 'You' : user.username;
+                      final timestampStr = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
+
+                      return UserTile(
+                        text: user.username,
+                        subtitle: '$sender: $lastMessage',
+                        trailing: Text(
+                          timestampStr,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        unreadCount: unreadCount,
+                        onTap: () => _startChatWithUser(user),
+                      );
+                    },
+                  );
+                },
+              );
+            }).where((widget) => widget is! SizedBox).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
     return Expanded(
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        children: _chattedUsersWithData.map((chatData) {
-          final user = chatData['user'] as UserModel;
-          final lastMessage = chatData['lastMessage'] as String;
-          final lastMessageTime = chatData['lastMessageTime'] as DateTime;
-          final senderId = chatData['senderId'] as String;
-          final unreadCount = chatData['unreadCount'] as int;
-
-          final currentUserId = getCurrentUser()?.uid;
-          final sender = (senderId == currentUserId) ? 'You' : user.username;
-          final timestampStr = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
-
-          return UserTile(
-            text: user.username,
-            subtitle: '$sender: $lastMessage',
-            trailing: Text(
-              timestampStr,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.chat_bubble_outline_rounded,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'No chats yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
             ),
-            unreadCount: unreadCount,
-            onTap: () => _startChatWithUser(user),
-          );
-        }).toList(),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Start a conversation with someone',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 30),
+          MainButton(
+            text: 'Search Users',
+            onPressed: _toggleSearch,
+            width: 200,
+          ),
+        ],
       ),
     );
   }

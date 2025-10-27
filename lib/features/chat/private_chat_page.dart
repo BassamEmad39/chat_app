@@ -2,6 +2,7 @@ import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String receiverEmail;
@@ -22,17 +23,21 @@ class PrivateChatPage extends StatefulWidget {
 class _PrivateChatPageState extends State<PrivateChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ChatService _chatService = ChatService();
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  
+  List<DocumentSnapshot> _messages = [];
 
   @override
   void initState() {
     super.initState();
     _markMessagesAsRead();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 
   void _markMessagesAsRead() async {
@@ -48,8 +53,22 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   void _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+    
     await _chatService.sendPrivateMessage(widget.receiverID, text);
     _messageController.clear();
+    
+    // Scroll to bottom after sending
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    if (_messages.isNotEmpty) {
+      _itemScrollController.scrollTo(
+        index: _messages.length - 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
@@ -87,16 +106,40 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     return StreamBuilder<QuerySnapshot>(
       stream: _chatService.getPrivateMessages(currentUserId, widget.receiverID),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final docs = snapshot.data!.docs;
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text(
+              'No messages yet\nStart the conversation!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        _messages = snapshot.data!.docs;
+        
+        // Scroll to bottom when new messages load
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+
         DateTime? lastDate;
 
-        return ListView(
+        return ScrollablePositionedList.builder(
+          itemScrollController: _itemScrollController,
+          itemPositionsListener: _itemPositionsListener,
           padding: const EdgeInsets.all(12),
-          children: docs.map((doc) {
+          itemCount: _messages.length,
+          itemBuilder: (context, index) {
+            final doc = _messages[index];
             final data = doc.data() as Map<String, dynamic>;
             final isMe = data['senderId'] == currentUserId;
             final timestamp = (data['timestamp'] as Timestamp).toDate();
@@ -123,9 +166,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
               children: [
                 dateDivider,
                 Align(
-                  alignment: isMe
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.symmetric(
@@ -181,7 +222,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 ),
               ],
             );
-          }).toList(),
+          },
         );
       },
     );
@@ -201,6 +242,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   hintText: "Type a message...",
                   border: InputBorder.none,
                 ),
+                onSubmitted: (value) => _sendMessage(),
               ),
             ),
             CircleAvatar(
