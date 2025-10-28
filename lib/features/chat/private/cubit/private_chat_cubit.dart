@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/private/cubit/private_chat_state.dart';
@@ -77,7 +78,7 @@ class PrivateChatCubit extends Cubit<PrivateChatState> {
       
       await _chatService.markMessagesAsRead(chatRoomId, currentUserId);
     } catch (error) {
-      print('Error marking messages as read: $error');
+      log('Error marking messages as read: $error');
     }
   }
 

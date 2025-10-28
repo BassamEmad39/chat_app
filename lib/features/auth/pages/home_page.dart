@@ -1,13 +1,13 @@
 
 import 'package:chat_app/core/widgets/app_drawer.dart';
 import 'package:chat_app/features/auth/cubit/auth_state.dart';
-import 'package:chat_app/features/chat/chats_tab.dart';
+import 'package:chat_app/features/chat/private/pages/chats_tab.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
-import 'package:chat_app/features/chat/group_list_page.dart';
+import 'package:chat_app/features/chat/group/pages/group_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../auth/cubit/auth_cubit.dart';
+import '../cubit/auth_cubit.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

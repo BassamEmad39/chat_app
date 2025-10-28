@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:chat_app/components/buttons/main_button.dart';
 import 'package:chat_app/components/inputs/name_text_form_field.dart';
 import 'package:chat_app/components/user_tile.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
-import 'package:chat_app/features/chat/private_chat_page.dart';
+import 'package:chat_app/features/chat/private/pages/private_chat_page.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -241,53 +242,99 @@ class _ChatsTabState extends State<ChatsTab> {
         }
 
         return Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            children: allUsers.map((user) {
-              return StreamBuilder<QuerySnapshot>(
-                stream: widget.chatServices.getPrivateMessages(currentUserId, user.uid),
-                builder: (context, messagesSnapshot) {
-                  if (!messagesSnapshot.hasData || messagesSnapshot.data!.docs.isEmpty) {
-                    return const SizedBox.shrink(); 
-                  }
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _getChatsWithLatestMessages(currentUserId, allUsers),
+            builder: (context, chatsSnapshot) {
+              if (!chatsSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                  final messages = messagesSnapshot.data!.docs;
-                  final lastMessageDoc = messages.last;
-                  final lastMessageData = lastMessageDoc.data() as Map<String, dynamic>;
+              final sortedChats = chatsSnapshot.data!;
 
-                  return FutureBuilder<int>(
-                    future: widget.chatServices.getUnreadCount(currentUserId, user.uid),
-                    builder: (context, unreadSnapshot) {
-                      final lastMessage = lastMessageData['message'] ?? '';
-                      final lastMessageTime = (lastMessageData['timestamp'] as Timestamp).toDate();
-                      final senderId = lastMessageData['senderId'];
-                      final unreadCount = unreadSnapshot.data ?? 0;
-                      
-                      final sender = (senderId == currentUserId) ? 'You' : user.username;
-                      final timestampStr = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
+              if (sortedChats.isEmpty) {
+                return _buildEmptyState();
+              }
 
-                      return UserTile(
-                        text: user.username,
-                        subtitle: '$sender: $lastMessage',
-                        trailing: Text(
-                          timestampStr,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                        unreadCount: unreadCount,
-                        onTap: () => _startChatWithUser(user),
-                      );
-                    },
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: sortedChats.length,
+                itemBuilder: (context, index) {
+                  final chat = sortedChats[index];
+                  final user = chat['user'] as UserModel;
+                  final lastMessage = chat['lastMessage'] as String;
+                  final timestampStr = chat['timestampStr'] as String;
+                  final sender = chat['sender'] as String;
+                  final unreadCount = chat['unreadCount'] as int;
+
+                  return UserTile(
+                    text: user.username,
+                    subtitle: '$sender: $lastMessage',
+                    trailing: Text(
+                      timestampStr,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                    unreadCount: unreadCount,
+                    onTap: () => _startChatWithUser(user),
                   );
                 },
               );
-            }).where((widget) => widget is! SizedBox).toList(),
+            },
           ),
         );
       },
     );
+  }
+
+  Stream<List<Map<String, dynamic>>> _getChatsWithLatestMessages(
+      String currentUserId, List<UserModel> allUsers) {
+    final Map<String, Map<String, dynamic>> chatDataMap = {};
+
+    final StreamController<List<Map<String, dynamic>>> controller =
+        StreamController<List<Map<String, dynamic>>>();
+
+    for (final user in allUsers) {
+      widget.chatServices
+          .getPrivateMessages(currentUserId, user.uid)
+          .listen((snapshot) async {
+        if (snapshot.docs.isNotEmpty) {
+          final lastMessageDoc = snapshot.docs.last;
+          final lastMessageData = lastMessageDoc.data() as Map<String, dynamic>;
+
+          final unreadCount = await widget.chatServices
+              .getUnreadCount(currentUserId, user.uid);
+
+          final lastMessage = lastMessageData['message'] ?? '';
+          final lastMessageTime = (lastMessageData['timestamp'] as Timestamp).toDate();
+          final senderId = lastMessageData['senderId'];
+          final sender = (senderId == currentUserId) ? 'You' : user.username;
+          final timestampStr = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
+
+          chatDataMap[user.uid] = {
+            'user': user,
+            'lastMessage': lastMessage,
+            'lastMessageTime': lastMessageTime,
+            'sender': sender,
+            'timestampStr': timestampStr,
+            'unreadCount': unreadCount,
+          };
+
+          // Emit sorted list
+          final sortedChats = chatDataMap.values.toList()
+            ..sort((a, b) {
+              final timeA = a['lastMessageTime'] as DateTime;
+              final timeB = b['lastMessageTime'] as DateTime;
+              return timeB.compareTo(timeA);
+            });
+
+          controller.add(sortedChats);
+        }
+      });
+    }
+
+    return controller.stream;
   }
 
   Widget _buildEmptyState() {

@@ -1,8 +1,8 @@
 
-import 'package:chat_app/features/auth/auth_gate.dart';
-import 'package:chat_app/features/auth/home_page.dart';
-import 'package:chat_app/features/auth/login_page.dart';
-import 'package:chat_app/features/auth/register_page.dart';
+import 'package:chat_app/features/auth/services/auth_gate.dart';
+import 'package:chat_app/features/auth/pages/home_page.dart';
+import 'package:chat_app/features/auth/pages/login_page.dart';
+import 'package:chat_app/features/auth/pages/register_page.dart';
 import 'package:go_router/go_router.dart';
 
 class Routes {
