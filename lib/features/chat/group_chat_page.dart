@@ -1,6 +1,9 @@
 import 'package:chat_app/features/chat/chat_services.dart';
+import 'package:chat_app/features/chat/group/cubit/group_chat_cubit.dart';
+import 'package:chat_app/features/chat/group/cubit/group_chat_state.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -23,14 +26,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
   final ChatService _chatService = ChatService();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-  
-  List<DocumentSnapshot> _messages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _markMessagesAsRead();
-  }
 
   @override
   void dispose() {
@@ -38,34 +33,27 @@ class _GroupChatPageState extends State<GroupChatPage> {
     super.dispose();
   }
 
-  void _markMessagesAsRead() async {
-    final currentUserId = _chatService.currentUserId;
-    if (currentUserId == null) return;
-
-    await _chatService.markGroupMessagesAsRead(widget.groupId, currentUserId);
-  }
-
-  void sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    await _chatService.sendGroupMessage(widget.groupId, text);
-    _controller.clear();
-    
-    _scrollToBottom();
-  }
-
   void _scrollToBottom() {
-    if (_messages.isNotEmpty) {
+    if (_itemScrollController.isAttached) {
       _itemScrollController.scrollTo(
-        index: _messages.length - 1,
+        index: 0, // Will be calculated based on messages length
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
   }
 
-  void addMember() async {
+  void _sendMessage() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    
+    context.read<GroupChatCubit>().sendMessage(text);
+    _controller.clear();
+  }
+
+  void _addMember() {
     final TextEditingController emailController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -82,20 +70,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
           ElevatedButton(
             onPressed: () async {
               final email = emailController.text.trim();
-              final success = await _chatService.addMemberToGroup(
-                widget.groupId,
-                email,
-              );
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    success
-                        ? "$email added to group"
-                        : "User does not exist or is already a member",
-                  ),
-                ),
-              );
+              if (email.isNotEmpty) {
+                context.read<GroupChatCubit>().addMember(email);
+                Navigator.pop(context);
+                
+                // Show success/error via cubit state
+              }
             },
             child: const Text("Add"),
           ),
@@ -104,7 +84,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     );
   }
 
-  void showMembers() {
+  void _showMembers() {
     final currentUserId = _chatService.currentUserId;
 
     showDialog(
@@ -142,22 +122,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
                     ),
                     trailing: !isMe && canManage
                         ? PopupMenuButton<String>(
-                            onSelected: (value) async {
+                            onSelected: (value) {
                               if (value == 'remove') {
-                                await _chatService.removeMemberFromGroup(
-                                  widget.groupId,
-                                  member['id'],
-                                );
+                                context.read<GroupChatCubit>().removeMember(member['id']);
                               } else if (value == 'makeAdmin') {
-                                await _chatService.makeAdmin(
-                                  widget.groupId,
-                                  member['id'],
-                                );
+                                context.read<GroupChatCubit>().updateAdminStatus(member['id'], true);
                               } else if (value == 'revokeAdmin') {
-                                await _chatService.revokeAdmin(
-                                  widget.groupId,
-                                  member['id'],
-                                );
+                                context.read<GroupChatCubit>().updateAdminStatus(member['id'], false);
                               }
                             },
                             itemBuilder: (context) => [
@@ -196,161 +167,74 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: showMembers,
-          child: Text(widget.groupName),
+    return BlocProvider(
+      create: (context) => GroupChatCubit(
+        chatService: _chatService,
+        groupId: widget.groupId,
+      ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: GestureDetector(
+            onTap: _showMembers,
+            child: Text(widget.groupName),
+          ),
+          backgroundColor: const Color(0xFF06B6D4),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.person_add, color: Colors.greenAccent),
+              onPressed: _addMember,
+            ),
+          ],
         ),
-        backgroundColor: const Color(0xFF06B6D4),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add, color: Colors.greenAccent),
-            onPressed: addMember,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              color: Colors.white,
-              child: _buildMessageList(),
-            ),
-          ),
-          SafeArea(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: "Type a message...",
-                        border: InputBorder.none,
-                      ),
-                      onSubmitted: (value) => sendMessage(),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: Color(0xFF06B6D4)),
-                    onPressed: sendMessage,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageList() {
-    final currentUserId = _chatService.currentUserId;
-    if (currentUserId == null) {
-      return const Center(child: Text('Not signed in'));
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: _chatService.getGroupMessages(widget.groupId),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        _messages = snapshot.data!.docs;
-        
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
-
-        DateTime? lastDate;
-
-        return ScrollablePositionedList.builder(
-          itemScrollController: _itemScrollController,
-          itemPositionsListener: _itemPositionsListener,
-          padding: const EdgeInsets.all(12),
-          itemCount: _messages.length,
-          itemBuilder: (context, index) {
-            final doc = _messages[index];
-            final data = doc.data() as Map<String, dynamic>;
-            final isMe = data['senderId'] == currentUserId;
-            final timestamp = (data['timestamp'] as Timestamp).toDate();
-
-            Widget dateDivider = const SizedBox();
-            if (lastDate == null || !isSameDay(lastDate!, timestamp)) {
-              lastDate = timestamp;
-              dateDivider = Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Center(
-                  child: Text(
-                    DateFormat('yyyy/MM/dd').format(timestamp),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+        body: BlocConsumer<GroupChatCubit, GroupChatState>(
+          listener: (context, state) {
+            // Handle errors with snackbars
+            if (state is GroupChatError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
               );
             }
-
+            
+            // Scroll to bottom when new messages arrive
+            if (state is GroupChatLoaded || state is GroupChatMessageSent) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollToBottom();
+              });
+            }
+          },
+          builder: (context, state) {
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                dateDivider,
-                Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                Expanded(
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isMe
-                          ? const LinearGradient(
-                              colors: [Colors.cyan, Colors.purple],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: isMe ? null : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
+                    color: Colors.white,
+                    child: _buildMessageList(state),
+                  ),
+                ),
+                SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    color: Colors.white,
+                    child: Row(
                       children: [
-                        if (!isMe)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4.0),
-                            child: Text(
-                              data['senderUsername'] ?? 'Unknown',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black54,
-                              ),
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            decoration: const InputDecoration(
+                              hintText: "Type a message...",
+                              border: InputBorder.none,
                             ),
-                          ),
-                        Text(
-                          data['message'] ?? '',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: isMe ? Colors.white : Colors.black87,
+                            onSubmitted: (value) => _sendMessage(),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('HH:mm').format(timestamp),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isMe ? Colors.white70 : Colors.black45,
+                        IconButton(
+                          icon: Icon(
+                            Icons.send,
+                            color: state is GroupChatMessageSending 
+                                ? Colors.grey 
+                                : const Color(0xFF06B6D4),
                           ),
+                          onPressed: state is GroupChatMessageSending ? null : _sendMessage,
                         ),
                       ],
                     ),
@@ -359,11 +243,131 @@ class _GroupChatPageState extends State<GroupChatPage> {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageList(GroupChatState state) {
+    if (state is GroupChatInitial || state is GroupChatLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state is GroupChatError) {
+      return Center(child: Text('Error: ${state.message}'));
+    }
+
+    if (state is GroupChatLoaded && state.messages.isEmpty) {
+      return const Center(
+        child: Text(
+          'No messages yet\nStart the conversation!',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    final messages = state is GroupChatLoaded 
+        ? state.messages 
+        : state is GroupChatMessageSending 
+            ? state.messages 
+            : state is GroupChatMessageSent 
+                ? state.messages 
+                : [];
+
+    DateTime? lastDate;
+
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScrollController,
+      itemPositionsListener: _itemPositionsListener,
+      padding: const EdgeInsets.all(12),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final doc = messages[index];
+        final data = doc.data() as Map<String, dynamic>;
+        final isMe = data['senderId'] == _chatService.currentUserId;
+        final timestamp = (data['timestamp'] as Timestamp).toDate();
+
+        Widget dateDivider = const SizedBox();
+        if (lastDate == null || !_isSameDay(lastDate!, timestamp)) {
+          lastDate = timestamp;
+          dateDivider = Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Center(
+              child: Text(
+                DateFormat('yyyy/MM/dd').format(timestamp),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            dateDivider,
+            Align(
+              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: isMe
+                      ? const LinearGradient(
+                          colors: [Colors.cyan, Colors.purple],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: isMe ? null : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  children: [
+                    if (!isMe)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: Text(
+                          data['senderUsername'] ?? 'Unknown',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      data['message'] ?? '',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isMe ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('HH:mm').format(timestamp),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isMe ? Colors.white70 : Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
-  bool isSameDay(DateTime a, DateTime b) =>
+  bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 }
