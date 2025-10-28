@@ -1,4 +1,3 @@
-// ignore_for_file: invalid_use_of_protected_member
 
 import 'package:chat_app/core/widgets/app_drawer.dart';
 import 'package:chat_app/features/auth/cubit/auth_state.dart';

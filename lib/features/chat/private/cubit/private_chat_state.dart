@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 abstract class PrivateChatState extends Equatable {
   const PrivateChatState();
   
-  // Add common getter for messages that returns empty list by default
   List<DocumentSnapshot> get messages => [];
 
   @override

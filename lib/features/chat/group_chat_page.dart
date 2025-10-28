@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class GroupChatPage extends StatefulWidget {
   final String groupId;
@@ -24,36 +23,28 @@ class GroupChatPage extends StatefulWidget {
 class _GroupChatPageState extends State<GroupChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ChatService _chatService = ChatService();
-  final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _scrollToBottom() {
-    if (_itemScrollController.isAttached) {
-      _itemScrollController.scrollTo(
-        index: 0, // Will be calculated based on messages length
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
   }
 
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    
-    context.read<GroupChatCubit>().sendMessage(text);
-    _controller.clear();
-  }
-
   void _addMember() {
     final TextEditingController emailController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -73,8 +64,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
               if (email.isNotEmpty) {
                 context.read<GroupChatCubit>().addMember(email);
                 Navigator.pop(context);
-                
-                // Show success/error via cubit state
               }
             },
             child: const Text("Add"),
@@ -124,11 +113,17 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         ? PopupMenuButton<String>(
                             onSelected: (value) {
                               if (value == 'remove') {
-                                context.read<GroupChatCubit>().removeMember(member['id']);
+                                context.read<GroupChatCubit>().removeMember(
+                                  member['id'],
+                                );
                               } else if (value == 'makeAdmin') {
-                                context.read<GroupChatCubit>().updateAdminStatus(member['id'], true);
+                                context
+                                    .read<GroupChatCubit>()
+                                    .updateAdminStatus(member['id'], true);
                               } else if (value == 'revokeAdmin') {
-                                context.read<GroupChatCubit>().updateAdminStatus(member['id'], false);
+                                context
+                                    .read<GroupChatCubit>()
+                                    .updateAdminStatus(member['id'], false);
                               }
                             },
                             itemBuilder: (context) => [
@@ -168,10 +163,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => GroupChatCubit(
-        chatService: _chatService,
-        groupId: widget.groupId,
-      ),
+      create: (context) =>
+          GroupChatCubit(chatService: _chatService, groupId: widget.groupId),
       child: Scaffold(
         appBar: AppBar(
           title: GestureDetector(
@@ -188,14 +181,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
         ),
         body: BlocConsumer<GroupChatCubit, GroupChatState>(
           listener: (context, state) {
-            // Handle errors with snackbars
             if (state is GroupChatError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
             }
-            
-            // Scroll to bottom when new messages arrive
+
             if (state is GroupChatLoaded || state is GroupChatMessageSent) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _scrollToBottom();
@@ -203,6 +194,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
             }
           },
           builder: (context, state) {
+            void sendMessage() {
+              final text = _controller.text.trim();
+              if (text.isEmpty) return;
+
+              context.read<GroupChatCubit>().sendMessage(text);
+              _controller.clear();
+            }
+
             return Column(
               children: [
                 Expanded(
@@ -213,7 +212,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
                 ),
                 SafeArea(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     color: Colors.white,
                     child: Row(
                       children: [
@@ -224,17 +226,19 @@ class _GroupChatPageState extends State<GroupChatPage> {
                               hintText: "Type a message...",
                               border: InputBorder.none,
                             ),
-                            onSubmitted: (value) => _sendMessage(),
+                            onSubmitted: (value) => sendMessage(),
                           ),
                         ),
                         IconButton(
                           icon: Icon(
                             Icons.send,
-                            color: state is GroupChatMessageSending 
-                                ? Colors.grey 
+                            color: state is GroupChatMessageSending
+                                ? Colors.grey
                                 : const Color(0xFF06B6D4),
                           ),
-                          onPressed: state is GroupChatMessageSending ? null : _sendMessage,
+                          onPressed: state is GroupChatMessageSending
+                              ? null
+                              : sendMessage,
                         ),
                       ],
                     ),
@@ -267,23 +271,24 @@ class _GroupChatPageState extends State<GroupChatPage> {
       );
     }
 
-    final messages = state is GroupChatLoaded 
-        ? state.messages 
-        : state is GroupChatMessageSending 
-            ? state.messages 
-            : state is GroupChatMessageSent 
-                ? state.messages 
-                : [];
+    final messages = state is GroupChatLoaded
+        ? state.messages
+        : state is GroupChatMessageSending
+        ? state.messages
+        : state is GroupChatMessageSent
+        ? state.messages
+        : [];
 
     DateTime? lastDate;
 
-    return ScrollablePositionedList.builder(
-      itemScrollController: _itemScrollController,
-      itemPositionsListener: _itemPositionsListener,
+    return ListView.builder(
+      controller: _scrollController,
+      reverse: true,
       padding: const EdgeInsets.all(12),
       itemCount: messages.length,
       itemBuilder: (context, index) {
-        final doc = messages[index];
+        final reversedIndex = messages.length - 1 - index;
+        final doc = messages[reversedIndex];
         final data = doc.data() as Map<String, dynamic>;
         final isMe = data['senderId'] == _chatService.currentUserId;
         final timestamp = (data['timestamp'] as Timestamp).toDate();
@@ -314,7 +319,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
               alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
                 margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   gradient: isMe
                       ? const LinearGradient(

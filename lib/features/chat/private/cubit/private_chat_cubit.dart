@@ -31,7 +31,6 @@ class PrivateChatCubit extends Cubit<PrivateChatState> {
       (QuerySnapshot snapshot) {
         _currentMessages = snapshot.docs;
         
-        // Check for unread messages
         _checkUnreadMessages();
       },
       onError: (error) {
@@ -66,7 +65,6 @@ class PrivateChatCubit extends Cubit<PrivateChatState> {
     
     try {
       await _chatService.sendPrivateMessage(receiverId, messageText.trim());
-      // State will update automatically via stream listener
     } catch (error) {
       emit(PrivateChatError('Failed to send message: $error'));
     }
@@ -79,7 +77,6 @@ class PrivateChatCubit extends Cubit<PrivateChatState> {
       
       await _chatService.markMessagesAsRead(chatRoomId, currentUserId);
     } catch (error) {
-      // Don't show error for read marking, just log it
       print('Error marking messages as read: $error');
     }
   }

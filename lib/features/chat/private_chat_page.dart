@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class PrivateChatPage extends StatefulWidget {
   final String receiverEmail;
@@ -26,33 +25,23 @@ class PrivateChatPage extends StatefulWidget {
 class _PrivateChatPageState extends State<PrivateChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ChatService _chatService = ChatService();
-  final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
-
-  List<DocumentSnapshot> _messages = []; // Keep local reference for scrolling
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _scrollToBottom() {
-    if (_messages.isNotEmpty) {
-      _itemScrollController.scrollTo(
-        index: _messages.length - 1,
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     }
-  }
-
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    
-    context.read<PrivateChatCubit>().sendMessage(text);
-    _messageController.clear();
   }
 
   @override
@@ -89,32 +78,35 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         ),
         body: BlocConsumer<PrivateChatCubit, PrivateChatState>(
           listener: (context, state) {
-            // Handle errors with snackbars
             if (state is PrivateChatError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.message)),
               );
             }
             
-            // Update messages and scroll when new messages arrive
-            if (state is PrivateChatLoaded || state is PrivateChatMessageSent || state is PrivateChatMessageSending) {
-              _messages = state.messages; // Now this works!
-              
+            if (state is PrivateChatLoaded || state is PrivateChatMessageSent) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _scrollToBottom();
               });
             }
             
-            // Mark messages as read when chat is loaded
             if (state is PrivateChatLoaded) {
               context.read<PrivateChatCubit>().markMessagesAsRead();
             }
           },
           builder: (context, state) {
+            void sendMessage() {
+              final text = _messageController.text.trim();
+              if (text.isEmpty) return;
+              
+              context.read<PrivateChatCubit>().sendMessage(text);
+              _messageController.clear();
+            }
+
             return Column(
               children: [
                 Expanded(child: _buildMessageList(state)),
-                _buildInputField(state),
+                _buildInputField(state, sendMessage),
               ],
             );
           },
@@ -132,7 +124,6 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       return Center(child: Text('Error: ${state.message}'));
     }
 
-    // Use the messages getter from the state
     final messages = state.messages;
 
     if (messages.isEmpty) {
@@ -145,18 +136,16 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       );
     }
 
-    // Store messages for scrolling
-    _messages = messages;
-
     DateTime? lastDate;
 
-    return ScrollablePositionedList.builder(
-      itemScrollController: _itemScrollController,
-      itemPositionsListener: _itemPositionsListener,
+    return ListView.builder(
+      controller: _scrollController,
+      reverse: true,
       padding: const EdgeInsets.all(12),
       itemCount: messages.length,
       itemBuilder: (context, index) {
-        final doc = messages[index];
+        final reversedIndex = messages.length - 1 - index;
+        final doc = messages[reversedIndex];
         final data = doc.data() as Map<String, dynamic>;
         final isMe = data['senderId'] == _chatService.currentUserId;
         final timestamp = (data['timestamp'] as Timestamp).toDate();
@@ -242,7 +231,8 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
       },
     );
   }
-  Widget _buildInputField(PrivateChatState state) {
+
+  Widget _buildInputField(PrivateChatState state, VoidCallback sendMessage) {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -256,7 +246,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   hintText: "Type a message...",
                   border: InputBorder.none,
                 ),
-                onSubmitted: (value) => _sendMessage(),
+                onSubmitted: (value) => sendMessage(),
               ),
             ),
             CircleAvatar(
@@ -266,7 +256,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   : Colors.purple,
               child: IconButton(
                 icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: state is PrivateChatMessageSending ? null : _sendMessage,
+                onPressed: state is PrivateChatMessageSending ? null : sendMessage,
               ),
             ),
           ],

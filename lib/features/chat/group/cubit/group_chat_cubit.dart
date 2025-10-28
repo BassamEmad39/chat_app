@@ -28,7 +28,6 @@ class GroupChatCubit extends Cubit<GroupChatState> {
       (QuerySnapshot snapshot) {
         _currentMessages = snapshot.docs;
         
-        // Check for unread messages
         final currentUserId = _chatService.currentUserId;
         if (currentUserId != null) {
           _checkUnreadMessages(currentUserId);
@@ -71,7 +70,6 @@ class GroupChatCubit extends Cubit<GroupChatState> {
     
     try {
       await _chatService.sendGroupMessage(groupId, messageText.trim());
-      // State will update automatically via stream listener
     } catch (error) {
       emit(GroupChatError('Failed to send message: $error'));
     }
@@ -103,7 +101,6 @@ class GroupChatCubit extends Cubit<GroupChatState> {
   Future<void> removeMember(String memberId) async {
     try {
       await _chatService.removeMemberFromGroup(groupId, memberId);
-      // Success is handled silently
     } catch (error) {
       emit(GroupChatError('Failed to remove member: $error'));
     }
@@ -116,7 +113,6 @@ class GroupChatCubit extends Cubit<GroupChatState> {
       } else {
         await _chatService.revokeAdmin(groupId, memberId);
       }
-      // Success is handled silently
     } catch (error) {
       emit(GroupChatError('Failed to update admin status: $error'));
     }
