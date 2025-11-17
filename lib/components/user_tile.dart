@@ -1,3 +1,4 @@
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -28,14 +29,10 @@ class UserTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF06B6D4), Color(0xFF7C3AED)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: AppColors.mainGradient,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: AppColors.blackColor.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 3),
             ),
@@ -46,8 +43,8 @@ class UserTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+              backgroundColor: AppColors.whiteColor.withValues(alpha: 0.2),
+              child: const Icon(Icons.person, color: AppColors.whiteColor, size: 22),
             ),
             const Gap(12),
             Expanded(
@@ -57,7 +54,7 @@ class UserTile extends StatelessWidget {
                   Text(
                     text,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.whiteColor,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -72,7 +69,7 @@ class UserTile extends StatelessWidget {
                             child: Text(
                               subtitle!,
                               style: const TextStyle(
-                                color: Colors.white70,
+                                color: AppColors.whiteColor,
                                 fontSize: 12,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -81,8 +78,8 @@ class UserTile extends StatelessWidget {
                         if (time != null)
                           Text(
                             time!,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: AppColors.whiteColor.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           ),
@@ -96,12 +93,12 @@ class UserTile extends StatelessWidget {
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent,
+                  color: AppColors.errorColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   unreadCount.toString(),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: const TextStyle(color: AppColors.whiteColor, fontSize: 12),
                 ),
               ),
             if (trailing != null) ...[const Gap(6), trailing!],

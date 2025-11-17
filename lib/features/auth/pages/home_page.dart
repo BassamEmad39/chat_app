@@ -1,4 +1,5 @@
 
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/core/widgets/app_drawer.dart';
 import 'package:chat_app/features/auth/cubit/auth_state.dart';
 import 'package:chat_app/features/chat/private/pages/chats_tab.dart';
@@ -42,7 +43,7 @@ class _HomePageState extends State<HomePage>
         return Scaffold(
           drawer: AppDrawer(),
           body: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF06B6D4), Color(0xFF7C3AED)],
                 begin: Alignment.topLeft,
@@ -63,9 +64,9 @@ class _HomePageState extends State<HomePage>
                       children: [
                         Builder(
                           builder: (context) => IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.menu,
-                              color: Colors.white,
+                              color: AppColors.whiteColor,
                               size: 28,
                             ),
                             onPressed: () => Scaffold.of(context).openDrawer(),
@@ -76,7 +77,7 @@ class _HomePageState extends State<HomePage>
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.whiteColor,
                           ),
                         ),
                         const Gap(40),
@@ -88,15 +89,15 @@ class _HomePageState extends State<HomePage>
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
                       "Welcome back,",
-                      style: const TextStyle(color: Colors.white70, fontSize: 16),
+                      style: TextStyle(color: AppColors.whiteColor.withValues(alpha: 0.7), fontSize: 16),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
                       currentUser?.username ?? "Guest",
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.whiteColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -106,7 +107,7 @@ class _HomePageState extends State<HomePage>
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: AppColors.whiteColor.withValues(alpha: 0.24),
                       borderRadius: BorderRadius.circular(25),
                     ),
                     child: TabBar(
@@ -114,15 +115,11 @@ class _HomePageState extends State<HomePage>
                       dividerColor: Colors.transparent,
                       indicator: BoxDecoration(
                         borderRadius: BorderRadius.circular(25),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF06B6D4), Color(0xFF7C3AED)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        gradient: AppColors.mainGradient,
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white70,
+                      labelColor: AppColors.whiteColor,
+                      unselectedLabelColor: AppColors.whiteColor.withValues(alpha: 0.7),
                       tabs: const [
                         Tab(text: "Chats"),
                         Tab(text: "Groups"),
@@ -132,8 +129,8 @@ class _HomePageState extends State<HomePage>
                   const Gap(20),
                   Expanded(
                     child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: AppColors.whiteColor,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(30),
                           topRight: Radius.circular(30),

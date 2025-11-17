@@ -8,7 +8,7 @@ class TextStyles {
     FontWeight? fontWeight,
   }) {
     return TextStyle(
-      color: color ?? AppColors.darkColor,
+      color: color ?? AppColors.blackColor,
       fontSize: fontSize ?? 30,
       fontWeight: fontWeight ?? FontWeight.normal,
     );
@@ -20,7 +20,7 @@ class TextStyles {
     FontWeight? fontWeight,
   }) {
     return TextStyle(
-      color: color ?? AppColors.darkColor,
+      color: color ?? AppColors.blackColor,
       fontSize: fontSize ?? 24,
       fontWeight: fontWeight ?? FontWeight.normal,
     );
@@ -32,7 +32,7 @@ class TextStyles {
     FontWeight? fontWeight,
   }) {
     return TextStyle(
-      color: color ?? AppColors.darkColor,
+      color: color ?? AppColors.blackColor,
       fontSize: fontSize ?? 18,
       fontWeight: fontWeight ?? FontWeight.normal,
     );
@@ -44,7 +44,7 @@ class TextStyles {
     FontWeight? fontWeight,
   }) {
     return TextStyle(
-      color: color ?? AppColors.darkColor,
+      color: color ?? AppColors.blackColor,
       fontSize: fontSize ?? 16,
       fontWeight: fontWeight ?? FontWeight.normal,
     );

@@ -4,6 +4,7 @@ import 'package:chat_app/components/inputs/name_text_form_field.dart';
 import 'package:chat_app/core/constants/app_assets.dart';
 import 'package:chat_app/core/extensions/navigations.dart';
 import 'package:chat_app/core/routers/routers.dart';
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/core/utils/text_styles.dart';
 import 'package:chat_app/features/auth/cubit/auth_cubit.dart';
 import 'package:chat_app/features/auth/cubit/auth_state.dart';
@@ -59,11 +60,11 @@ class _LoginPageState extends State<LoginPage> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.whiteColor,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: AppColors.blackColor.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 5),
                             ),
@@ -77,18 +78,18 @@ class _LoginPageState extends State<LoginPage> {
                         'Welcome Back',
                         style: TextStyles.getHeadLine1(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.whiteColor,
                         ),
                       ),
                       const Gap(8),
                       Text(
                         'Login to continue chatting',
-                        style: TextStyles.getHeadLine2(color: Colors.white70),
+                        style: TextStyles.getHeadLine2(color: AppColors.whiteColor.withValues(alpha: 0.7)),
                       ),
                       const Gap(40),
 
                       Card(
-                        color: Colors.white,
+                        color: AppColors.whiteColor,
                         elevation: 8,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -135,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Text(
                             'Don\'t have an account?',
-                            style: TextStyles.getBody(color: Colors.white),
+                            style: TextStyles.getBody(color: AppColors.whiteColor),
                           ),
                           TextButton(
                             onPressed: () {

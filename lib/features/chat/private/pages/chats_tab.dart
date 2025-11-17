@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:chat_app/components/buttons/main_button.dart';
 import 'package:chat_app/components/inputs/name_text_form_field.dart';
 import 'package:chat_app/components/user_tile.dart';
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/private/pages/private_chat_page.dart';
 import 'package:chat_app/models/user_model.dart';
@@ -130,7 +131,7 @@ class _ChatsTabState extends State<ChatsTab> {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.blackColor,
                 ),
               ),
               IconButton(
@@ -172,7 +173,7 @@ class _ChatsTabState extends State<ChatsTab> {
                   ? 'All users (${_filteredUsers.length})'
                   : 'Found ${_filteredUsers.length} user${_filteredUsers.length == 1 ? '' : 's'}',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: AppColors.greyColor,
                 fontSize: 14,
               ),
             ),
@@ -187,7 +188,7 @@ class _ChatsTabState extends State<ChatsTab> {
                         Icon(
                           Icons.person_search_rounded,
                           size: 60,
-                          color: Colors.grey[400],
+                          color: AppColors.greyColor,
                         ),
                         const Gap(16),
                         Text(
@@ -196,7 +197,7 @@ class _ChatsTabState extends State<ChatsTab> {
                               : 'No users found for "${_searchController.text}"',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: AppColors.greyColor,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -273,7 +274,7 @@ class _ChatsTabState extends State<ChatsTab> {
                     trailing: Text(
                       timestampStr,
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: AppColors.whiteColor,
                         fontSize: 12,
                       ),
                     ),
@@ -346,7 +347,7 @@ class _ChatsTabState extends State<ChatsTab> {
           Icon(
             Icons.chat_bubble_outline_rounded,
             size: 80,
-            color: Colors.grey[400],
+            color: AppColors.greyColor,
           ),
           const Gap(20),
           Text(
@@ -354,7 +355,7 @@ class _ChatsTabState extends State<ChatsTab> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: AppColors.greyColor,
             ),
           ),
           const Gap(10),
@@ -362,7 +363,7 @@ class _ChatsTabState extends State<ChatsTab> {
             'Start a conversation with someone',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.greyColor,
             ),
           ),
           const Gap(30),

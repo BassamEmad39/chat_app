@@ -8,10 +8,10 @@ class AppThemes {
     scaffoldBackgroundColor: Colors.blue,
     fontFamily: AppFonts.poppins,
     colorScheme: ColorScheme.light(
-      primary: Colors.grey.shade500,
-      secondary: Colors.grey.shade200,
+      primary: AppColors.greyColor,
+      secondary: AppColors.greyColor.withValues(alpha: 0.2),
       tertiary: AppColors.whiteColor,
-      inversePrimary: Colors.grey.shade900,
+      inversePrimary: AppColors.blackColor,
     ),
     inputDecorationTheme: InputDecorationTheme(
       fillColor: AppColors.whiteColor,
@@ -19,19 +19,19 @@ class AppThemes {
       hintStyle: TextStyles.getSmall(),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppColors.darkColor, width: 1.5),
+        borderSide: BorderSide(color: AppColors.blackColor, width: 1.5),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppColors.darkColor, width: 1.5),
+        borderSide: BorderSide(color: AppColors.blackColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.red, width: 1.5),
+        borderSide: BorderSide(color: AppColors.errorColor, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.red, width: 1.5),
+        borderSide: BorderSide(color: AppColors.errorColor, width: 1.5),
       ),
     ),
   );

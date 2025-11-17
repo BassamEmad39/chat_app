@@ -1,3 +1,4 @@
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/private/cubit/private_chat_cubit.dart';
 import 'package:chat_app/features/chat/private/cubit/private_chat_state.dart';
@@ -63,17 +64,13 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         currentUserId: currentUserId,
       ),
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: AppColors.greyColor,
         appBar: AppBar(
           title: Text(widget.receiverUsername),
           elevation: 0,
           flexibleSpace: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.cyan, Colors.purple],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
+              gradient:AppColors.mainGradient,
             ),
           ),
         ),
@@ -132,7 +129,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         child: Text(
           'No messages yet\nStart the conversation!',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: AppColors.greyColor),
         ),
       );
     }
@@ -161,7 +158,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 DateFormat('yyyy/MM/dd').format(timestamp),
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Colors.black54,
+                  color: AppColors.blackColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -204,7 +201,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: AppColors.blackColor,
                           ),
                         ),
                       ),
@@ -212,7 +209,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       data['message'] ?? '',
                       style: TextStyle(
                         fontSize: 15,
-                        color: isMe ? Colors.white : Colors.black87,
+                        color: isMe ? AppColors.whiteColor : AppColors.blackColor,
                       ),
                     ),
                     const Gap(4),
@@ -237,7 +234,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        color: Colors.white,
+        color: AppColors.whiteColor,
         child: Row(
           children: [
             Expanded(
@@ -256,7 +253,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                   ? Colors.grey 
                   : Colors.purple,
               child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white),
+                icon: const Icon(Icons.send, color: AppColors.whiteColor),
                 onPressed: state is PrivateChatMessageSending ? null : sendMessage,
               ),
             ),

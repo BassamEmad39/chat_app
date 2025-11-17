@@ -3,6 +3,7 @@
 import 'dart:ui';
 import 'package:chat_app/core/routers/routers.dart';
 import 'package:chat_app/core/extensions/navigations.dart';
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/features/auth/cubit/auth_cubit.dart';
 import 'package:chat_app/features/auth/cubit/auth_state.dart';
 import 'package:flutter/material.dart';
@@ -21,17 +22,17 @@ class AppDrawer extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          backgroundColor: Colors.white.withValues(alpha: 0.9),
+          backgroundColor: AppColors.whiteColor.withValues(alpha: 0.9),
           title: const Text(
             "Logout",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF06B6D4),
+              color: AppColors.primaryColor,
             ),
           ),
-          content: const Text(
+          content: Text(
             "Are you sure you want to logout?",
-            style: TextStyle(color: Colors.black87),
+            style: TextStyle(color: AppColors.blackColor.withValues(alpha: 0.87)),
           ),
           actions: [
             TextButton(
@@ -39,14 +40,14 @@ class AppDrawer extends StatelessWidget {
               child: Text(
                 "Cancel",
                 style: TextStyle(
-                  color: Colors.grey[700],
+                  color: AppColors.greyColor.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
+                backgroundColor: AppColors.errorColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -56,7 +57,7 @@ class AppDrawer extends StatelessWidget {
               child: const Text(
                 "Logout",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.whiteColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -81,11 +82,7 @@ class AppDrawer extends StatelessWidget {
         return Drawer(
           child: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: AppColors.mainGradient,
             ),
             child: SafeArea(
               child: Column(
@@ -95,8 +92,8 @@ class AppDrawer extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Colors.white.withValues(alpha: 0.15),
-                          Colors.white.withValues(alpha: 0.05),
+                          AppColors.whiteColor.withValues(alpha: 0.15),
+                          AppColors.whiteColor.withValues(alpha: 0.05),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -119,7 +116,7 @@ class AppDrawer extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: AppColors.blackColor.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -131,7 +128,7 @@ class AppDrawer extends StatelessWidget {
                                   ? currentUser!.username[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.whiteColor,
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -145,8 +142,8 @@ class AppDrawer extends StatelessWidget {
                             children: [
                               Text(
                                 currentUser?.username ?? "Guest",
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: AppColors.whiteColor,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -156,7 +153,7 @@ class AppDrawer extends StatelessWidget {
                               Text(
                                 currentUser?.email ?? "No Email",
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  color: AppColors.whiteColor.withValues(alpha: 0.8),
                                   fontSize: 14,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -168,13 +165,13 @@ class AppDrawer extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: AppColors.whiteColor.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   "Online",
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: AppColors.whiteColor.withValues(alpha: 0.9),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -228,10 +225,10 @@ class AppDrawer extends StatelessWidget {
                     margin: const EdgeInsets.all(16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: AppColors.whiteColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: AppColors.whiteColor.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -242,14 +239,14 @@ class AppDrawer extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.chat_rounded,
-                              color: Colors.white.withValues(alpha: 0.7),
+                              color: AppColors.whiteColor.withValues(alpha: 0.7),
                               size: 16,
                             ),
                             const Gap(6),
                             Text(
                               "ChatApp v1.0",
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
+                                color: AppColors.whiteColor.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),
@@ -258,16 +255,16 @@ class AppDrawer extends StatelessWidget {
                         const Gap(12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withValues(
+                            backgroundColor: AppColors.errorColor.withValues(
                               alpha: 0.9,
                             ),
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.whiteColor,
                             minimumSize: const Size.fromHeight(50),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 4,
-                            shadowColor: Colors.redAccent.withValues(
+                            shadowColor: AppColors.errorColor.withValues(
                               alpha: 0.3,
                             ),
                           ),
@@ -308,13 +305,13 @@ class AppDrawer extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Material(
             color: isSelected
-                ? Colors.white.withValues(alpha: 0.2)
-                : Colors.white.withValues(alpha: 0.1),
+                ? AppColors.whiteColor.withValues(alpha: 0.2)
+                : AppColors.whiteColor.withValues(alpha: 0.1),
             child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(16),
-              splashColor: Colors.white24,
-              highlightColor: Colors.white12,
+              splashColor: AppColors.whiteColor.withValues(alpha: 0.24),
+              highlightColor: AppColors.whiteColor.withValues(alpha: 0.12),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 16,
@@ -327,17 +324,17 @@ class AppDrawer extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.2),
+                            ? AppColors.whiteColor.withValues(alpha: 0.3)
+                            : AppColors.whiteColor.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(icon, color: Colors.white, size: 20),
+                      child: Icon(icon, color: AppColors.whiteColor, size: 20),
                     ),
                     const Gap(16),
                     Text(
                       text,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.whiteColor,
                         fontSize: 16,
                         fontWeight: isSelected
                             ? FontWeight.w600
@@ -352,13 +349,13 @@ class AppDrawer extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent,
+                          color: AppColors.errorColor,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           badgeCount.toString(),
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.whiteColor,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -367,7 +364,7 @@ class AppDrawer extends StatelessWidget {
                     if (badgeCount == 0)
                       Icon(
                         Icons.arrow_forward_ios_rounded,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: AppColors.whiteColor.withValues(alpha: 0.6),
                         size: 16,
                       ),
                   ],

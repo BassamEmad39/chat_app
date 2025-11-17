@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chat_app/core/utils/app_colors.dart' show AppColors;
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/group/pages/create_group_page.dart';
 import 'package:chat_app/features/chat/group/cubit/group_list_cubit.dart';
@@ -86,14 +87,14 @@ class _GroupListPageState extends State<GroupListPage> {
                       Icon(
                         Icons.group_outlined,
                         size: 64,
-                        color: Colors.grey,
+                        color: AppColors.greyColor,
                       ),
                       Gap(16),
                       Text(
                         'No groups yet',
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey,
+                          color: AppColors.greyColor,
                         ),
                       ),
                       Gap(8),
@@ -101,7 +102,7 @@ class _GroupListPageState extends State<GroupListPage> {
                         'Create your first group to get started!',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: AppColors.greyColor,
                         ),
                       ),
                     ],
@@ -146,8 +147,8 @@ class _GroupListPageState extends State<GroupListPage> {
                         trailing: timestampStr.isNotEmpty
                             ? Text(
                                 timestampStr,
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: AppColors.whiteColor,
                                   fontSize: 12,
                                 ),
                               )
@@ -168,7 +169,7 @@ class _GroupListPageState extends State<GroupListPage> {
             child: FloatingActionButton(
               onPressed: _createNewGroup,
               backgroundColor: const Color(0xFF06B6D4),
-              child: const Icon(Icons.group_add, color: Colors.white),
+              child: const Icon(Icons.group_add, color: AppColors.whiteColor),
             ),
           ),
         ],

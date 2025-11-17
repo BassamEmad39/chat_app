@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:chat_app/components/buttons/main_button.dart';
 import 'package:chat_app/components/inputs/name_text_form_field.dart';
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/features/chat/group/cubit/group_list_cubit.dart';
 import 'package:chat_app/features/chat/group/cubit/group_list_state.dart';
 import 'package:chat_app/models/user_model.dart';
@@ -88,10 +89,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
     final allMembers = [...selectedUserIds, currentUserId];
     
-    // Use the cubit to create the group
     context.read<GroupListCubit>().createGroup(groupName, allMembers);
-    
-    // Navigate back - the cubit will handle the creation
     Navigator.pop(context);
   }
 
@@ -99,7 +97,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.errorColor,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -124,11 +122,11 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: AppColors.greyColor,
         appBar: AppBar(
           title: const Text(
             'Create New Group',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.whiteColor, fontWeight: FontWeight.bold),
           ),
           elevation: 0,
           flexibleSpace: Container(
@@ -160,11 +158,11 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.whiteColor,
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: AppColors.blackColor.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -182,13 +180,13 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: AppColors.whiteColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '$_selectedCount user${_selectedCount == 1 ? '' : 's'} selected',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.whiteColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -200,7 +198,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                     Expanded(
                       child: Container(
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.whiteColor,
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(30),
                             topRight: Radius.circular(30),
@@ -214,14 +212,14 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                     Icon(
                                       Icons.group_off_rounded,
                                       size: 60,
-                                      color: Colors.grey,
+                                      color: AppColors.greyColor,
                                     ),
                                     Gap(16),
                                     Text(
                                       'No other users found',
                                       style: TextStyle(
                                         fontSize: 16,
-                                        color: Colors.grey,
+                                        color: AppColors.greyColor,
                                       ),
                                     ),
                                   ],
@@ -236,7 +234,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                        color: AppColors.blackColor,
                                       ),
                                     ),
                                   ),
@@ -275,7 +273,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                             boxShadow: isSelected
                                                 ? [
                                                     BoxShadow(
-                                                      color: Colors.black
+                                                      color: AppColors.blackColor
                                                           .withValues(alpha: 0.1),
                                                       blurRadius: 6,
                                                       offset: const Offset(0, 2),
@@ -353,11 +351,11 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
                     Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: AppColors.whiteColor,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black12,
+                            color: AppColors.blackColor.withValues(alpha: 0.12),
                             blurRadius: 10,
                             offset: Offset(0, -2),
                           ),

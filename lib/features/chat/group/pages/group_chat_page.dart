@@ -1,3 +1,4 @@
+import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/group/cubit/group_chat_cubit.dart';
 import 'package:chat_app/features/chat/group/cubit/group_chat_state.dart';
@@ -207,7 +208,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
               children: [
                 Expanded(
                   child: Container(
-                    color: Colors.white,
+                    color: AppColors.whiteColor,
                     child: _buildMessageList(state),
                   ),
                 ),
@@ -217,7 +218,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                       horizontal: 12,
                       vertical: 8,
                     ),
-                    color: Colors.white,
+                    color: AppColors.whiteColor,
                     child: Row(
                       children: [
                         Expanded(
@@ -267,7 +268,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         child: Text(
           'No messages yet\nStart the conversation!',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: AppColors.greyColor),
         ),
       );
     }
@@ -302,9 +303,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
             child: Center(
               child: Text(
                 DateFormat('yyyy/MM/dd').format(timestamp),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Colors.black54,
+                  color: AppColors.blackColor.withValues(alpha: 0.54),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -345,10 +346,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
                         padding: const EdgeInsets.only(bottom: 4.0),
                         child: Text(
                           data['senderUsername'] ?? 'Unknown',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: AppColors.blackColor.withValues(alpha: 0.54),
                           ),
                         ),
                       ),
