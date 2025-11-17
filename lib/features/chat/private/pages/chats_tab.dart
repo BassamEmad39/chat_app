@@ -9,6 +9,7 @@ import 'package:chat_app/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 class ChatsTab extends StatefulWidget {
   final ChatService chatServices;
@@ -188,7 +189,7 @@ class _ChatsTabState extends State<ChatsTab> {
                           size: 60,
                           color: Colors.grey[400],
                         ),
-                        const SizedBox(height: 16),
+                        const Gap(16),
                         Text(
                           _searchController.text.isEmpty
                               ? 'No other users found'
@@ -347,7 +348,7 @@ class _ChatsTabState extends State<ChatsTab> {
             size: 80,
             color: Colors.grey[400],
           ),
-          const SizedBox(height: 20),
+          const Gap(20),
           Text(
             'No chats yet',
             style: TextStyle(
@@ -356,7 +357,7 @@ class _ChatsTabState extends State<ChatsTab> {
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 10),
+          const Gap(10),
           Text(
             'Start a conversation with someone',
             style: TextStyle(
@@ -364,7 +365,7 @@ class _ChatsTabState extends State<ChatsTab> {
               color: Colors.grey[500],
             ),
           ),
-          const SizedBox(height: 30),
+          const Gap(30),
           MainButton(
             text: 'Search Users',
             onPressed: _toggleSearch,

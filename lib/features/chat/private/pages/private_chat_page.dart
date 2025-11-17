@@ -4,6 +4,7 @@ import 'package:chat_app/features/chat/private/cubit/private_chat_state.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 
 class PrivateChatPage extends StatefulWidget {
@@ -214,7 +215,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                         color: isMe ? Colors.white : Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const Gap(4),
                     Text(
                       DateFormat('HH:mm').format(timestamp),
                       style: TextStyle(

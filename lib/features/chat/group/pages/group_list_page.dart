@@ -8,6 +8,7 @@ import 'package:chat_app/features/chat/group/pages/group_chat_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 
 import '../../../../components/user_tile.dart';
 
@@ -67,7 +68,7 @@ class _GroupListPageState extends State<GroupListPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text('Error: ${state.message}'),
-                      const SizedBox(height: 16),
+                      const Gap(16),
                       ElevatedButton(
                         onPressed: () => context.read<GroupListCubit>().refreshGroups(),
                         child: const Text('Retry'),
@@ -87,7 +88,7 @@ class _GroupListPageState extends State<GroupListPage> {
                         size: 64,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 16),
+                      Gap(16),
                       Text(
                         'No groups yet',
                         style: TextStyle(
@@ -95,7 +96,7 @@ class _GroupListPageState extends State<GroupListPage> {
                           color: Colors.grey,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      Gap(8),
                       Text(
                         'Create your first group to get started!',
                         style: TextStyle(

@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 
 class CreateGroupPage extends StatefulWidget {
   const CreateGroupPage({super.key});
@@ -174,7 +175,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                               hintText: 'Enter group name...',
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const Gap(16),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -215,7 +216,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
                                       size: 60,
                                       color: Colors.grey,
                                     ),
-                                    SizedBox(height: 16),
+                                    Gap(16),
                                     Text(
                                       'No other users found',
                                       style: TextStyle(

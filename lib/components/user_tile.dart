@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 
 class UserTile extends StatelessWidget {
   const UserTile({
@@ -48,7 +49,7 @@ class UserTile extends StatelessWidget {
               backgroundColor: Colors.white.withValues(alpha: 0.2),
               child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
-            const SizedBox(width: 12),
+            const Gap(12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +104,7 @@ class UserTile extends StatelessWidget {
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
-            if (trailing != null) ...[const SizedBox(width: 6), trailing!],
+            if (trailing != null) ...[const Gap(6), trailing!],
           ],
         ),
       ),

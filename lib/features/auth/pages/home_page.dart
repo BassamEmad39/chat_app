@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage>
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(width: 40),
+                        const Gap(40),
                       ],
                     ),
                   ),

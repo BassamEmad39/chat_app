@@ -7,6 +7,7 @@ import 'package:chat_app/features/auth/cubit/auth_cubit.dart';
 import 'package:chat_app/features/auth/cubit/auth_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -137,7 +138,7 @@ class AppDrawer extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const Gap(16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +152,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
+                              const Gap(4),
                               Text(
                                 currentUser?.email ?? "No Email",
                                 style: TextStyle(
@@ -160,7 +161,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 6),
+                              const Gap(6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -186,7 +187,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const Gap(24),
 
                   Expanded(
                     child: ListView(
@@ -204,7 +205,7 @@ class AppDrawer extends StatelessWidget {
                           icon: Icons.person_rounded,
                           text: 'My Profile',
                           onTap: () {
-                            // TODO: Add profile page navigation
+                            
                             Navigator.pop(context);
                           },
                         ),
@@ -214,7 +215,7 @@ class AppDrawer extends StatelessWidget {
                           icon: Icons.settings_rounded,
                           text: 'Settings',
                           onTap: () {
-                            // TODO: Add settings page
+                            
                             Navigator.pop(context);
                           },
                         ),
@@ -244,7 +245,7 @@ class AppDrawer extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.7),
                               size: 16,
                             ),
-                            const SizedBox(width: 6),
+                            const Gap(6),
                             Text(
                               "ChatApp v1.0",
                               style: TextStyle(
@@ -254,7 +255,7 @@ class AppDrawer extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const Gap(12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent.withValues(
@@ -332,7 +333,7 @@ class AppDrawer extends StatelessWidget {
                       ),
                       child: Icon(icon, color: Colors.white, size: 20),
                     ),
-                    const SizedBox(width: 16),
+                    const Gap(16),
                     Text(
                       text,
                       style: TextStyle(
