@@ -16,7 +16,7 @@ showErrorDialog(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: AppColors.errorColor,
+      backgroundColor: AppColors.redColor,
       duration: Duration(seconds: 3),
     ),
   );
@@ -27,7 +27,7 @@ showSuccessDialog(BuildContext context, String message) {
     SnackBar(
       content: Text(message),
       duration: Duration(seconds: 3),
-      backgroundColor: AppColors.successColor,
+      backgroundColor: AppColors.greenColor,
     ),
   );
 }

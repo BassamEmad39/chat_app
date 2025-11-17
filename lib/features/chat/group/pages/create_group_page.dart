@@ -97,7 +97,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppColors.errorColor,
+        backgroundColor: AppColors.redColor,
         behavior: SnackBarBehavior.floating,
       ),
     );

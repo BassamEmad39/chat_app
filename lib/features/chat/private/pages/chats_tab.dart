@@ -27,6 +27,8 @@ class _ChatsTabState extends State<ChatsTab> {
   bool _showSearch = false;
   final TextEditingController _searchController = TextEditingController();
   List<UserModel> _filteredUsers = [];
+  
+  final List<StreamSubscription> _subscriptions = [];
 
   @override
   void initState() {
@@ -36,6 +38,9 @@ class _ChatsTabState extends State<ChatsTab> {
 
   @override
   void dispose() {
+    for (var subscription in _subscriptions) {
+      subscription.cancel();
+    }
     _searchController.dispose();
     super.dispose();
   }
@@ -156,7 +161,7 @@ class _ChatsTabState extends State<ChatsTab> {
           ),
           _buildSearchResults(),
         ] else ...[
-          _buildRecentChatsStream(),
+          _buildRecentChatsList(), 
         ],
       ],
     );
@@ -222,91 +227,79 @@ class _ChatsTabState extends State<ChatsTab> {
     );
   }
 
-  Widget _buildRecentChatsStream() {
+  Widget _buildRecentChatsList() {
     final currentUserId = getCurrentUser()?.uid;
     if (currentUserId == null) {
       return const Expanded(child: Center(child: Text('Not signed in')));
     }
 
-    return StreamBuilder<List<UserModel>>(
-      stream: widget.chatServices.getUsersStream(),
-      builder: (context, usersSnapshot) {
-        if (!usersSnapshot.hasData) {
-          return const Expanded(child: Center(child: CircularProgressIndicator()));
-        }
+    return Expanded(
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _loadChatsWithLastMessages(currentUserId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        final allUsers = usersSnapshot.data!
-            .where((user) => user.uid != currentUserId)
-            .toList();
+          if (snapshot.hasError) {
+            log('Error loading chats: ${snapshot.error}');
+            return _buildEmptyState();
+          }
 
-        if (allUsers.isEmpty) {
-          return _buildEmptyState();
-        }
+          final chats = snapshot.data ?? [];
 
-        return Expanded(
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _getChatsWithLatestMessages(currentUserId, allUsers),
-            builder: (context, chatsSnapshot) {
-              if (!chatsSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          final chatsWithMessages = chats.where((chat) {
+            final lastMessage = chat['lastMessage'] as String?;
+            return lastMessage != null && lastMessage.isNotEmpty;
+          }).toList();
 
-              final sortedChats = chatsSnapshot.data!;
+          if (chatsWithMessages.isEmpty) {
+            return _buildEmptyState();
+          }
 
-              if (sortedChats.isEmpty) {
-                return _buildEmptyState();
-              }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: chatsWithMessages.length,
+            itemBuilder: (context, index) {
+              final chat = chatsWithMessages[index];
+              final user = chat['user'] as UserModel;
+              final lastMessage = chat['lastMessage'] as String;
+              final timestampStr = chat['timestampStr'] as String;
+              final sender = chat['sender'] as String;
+              final unreadCount = chat['unreadCount'] as int;
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: sortedChats.length,
-                itemBuilder: (context, index) {
-                  final chat = sortedChats[index];
-                  final user = chat['user'] as UserModel;
-                  final lastMessage = chat['lastMessage'] as String;
-                  final timestampStr = chat['timestampStr'] as String;
-                  final sender = chat['sender'] as String;
-                  final unreadCount = chat['unreadCount'] as int;
-
-                  return UserTile(
-                    text: user.username,
-                    subtitle: '$sender: $lastMessage',
-                    trailing: Text(
-                      timestampStr,
-                      style: const TextStyle(
-                        color: AppColors.whiteColor,
-                        fontSize: 12,
-                      ),
-                    ),
-                    unreadCount: unreadCount,
-                    onTap: () => _startChatWithUser(user),
-                  );
-                },
+              return UserTile(
+                text: user.username,
+                subtitle: '$sender: $lastMessage',
+                trailing: Text(
+                  timestampStr,
+                  style: const TextStyle(
+                    color: AppColors.whiteColor,
+                    fontSize: 12,
+                  ),
+                ),
+                unreadCount: unreadCount,
+                onTap: () => _startChatWithUser(user),
               );
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  Stream<List<Map<String, dynamic>>> _getChatsWithLatestMessages(
-      String currentUserId, List<UserModel> allUsers) {
-    final Map<String, Map<String, dynamic>> chatDataMap = {};
+  Future<List<Map<String, dynamic>>> _loadChatsWithLastMessages(String currentUserId) async {
+    final List<Map<String, dynamic>> chats = [];
 
-    final StreamController<List<Map<String, dynamic>>> controller =
-        StreamController<List<Map<String, dynamic>>>();
+    for (final user in _allUsers) {
+      try {
+        final messagesSnapshot = await widget.chatServices
+            .getPrivateMessages(currentUserId, user.uid)
+            .first;
 
-    for (final user in allUsers) {
-      widget.chatServices
-          .getPrivateMessages(currentUserId, user.uid)
-          .listen((snapshot) async {
-        if (snapshot.docs.isNotEmpty) {
-          final lastMessageDoc = snapshot.docs.last;
+        if (messagesSnapshot.docs.isNotEmpty) {
+          final lastMessageDoc = messagesSnapshot.docs.last;
           final lastMessageData = lastMessageDoc.data() as Map<String, dynamic>;
-
-          final unreadCount = await widget.chatServices
-              .getUnreadCount(currentUserId, user.uid);
 
           final lastMessage = lastMessageData['message'] ?? '';
           final lastMessageTime = (lastMessageData['timestamp'] as Timestamp).toDate();
@@ -314,29 +307,29 @@ class _ChatsTabState extends State<ChatsTab> {
           final sender = (senderId == currentUserId) ? 'You' : user.username;
           final timestampStr = '${lastMessageTime.hour.toString().padLeft(2, '0')}:${lastMessageTime.minute.toString().padLeft(2, '0')}';
 
-          chatDataMap[user.uid] = {
+          final unreadCount = await widget.chatServices.getUnreadCount(currentUserId, user.uid);
+
+          chats.add({
             'user': user,
             'lastMessage': lastMessage,
             'lastMessageTime': lastMessageTime,
             'sender': sender,
             'timestampStr': timestampStr,
             'unreadCount': unreadCount,
-          };
-
-          // Emit sorted list
-          final sortedChats = chatDataMap.values.toList()
-            ..sort((a, b) {
-              final timeA = a['lastMessageTime'] as DateTime;
-              final timeB = b['lastMessageTime'] as DateTime;
-              return timeB.compareTo(timeA);
-            });
-
-          controller.add(sortedChats);
+          });
         }
-      });
+      } catch (e) {
+        log('Error loading messages for user ${user.uid}: $e');
+      }
     }
 
-    return controller.stream;
+    chats.sort((a, b) {
+      final timeA = a['lastMessageTime'] as DateTime;
+      final timeB = b['lastMessageTime'] as DateTime;
+      return timeB.compareTo(timeA);
+    });
+
+    return chats;
   }
 
   Widget _buildEmptyState() {

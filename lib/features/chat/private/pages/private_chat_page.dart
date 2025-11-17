@@ -49,7 +49,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = _chatService.currentUserId;
-    
+
     if (currentUserId == null) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.receiverUsername)),
@@ -64,30 +64,28 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
         currentUserId: currentUserId,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.greyColor,
+        backgroundColor: AppColors.whiteColor,
         appBar: AppBar(
           title: Text(widget.receiverUsername),
           elevation: 0,
           flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient:AppColors.mainGradient,
-            ),
+            decoration: const BoxDecoration(gradient: AppColors.mainGradient),
           ),
         ),
         body: BlocConsumer<PrivateChatCubit, PrivateChatState>(
           listener: (context, state) {
             if (state is PrivateChatError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
             }
-            
+
             if (state is PrivateChatLoaded || state is PrivateChatMessageSent) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _scrollToBottom();
               });
             }
-            
+
             if (state is PrivateChatLoaded) {
               context.read<PrivateChatCubit>().markMessagesAsRead();
             }
@@ -96,7 +94,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             void sendMessage() {
               final text = _messageController.text.trim();
               if (text.isEmpty) return;
-              
+
               context.read<PrivateChatCubit>().sendMessage(text);
               _messageController.clear();
             }
@@ -209,7 +207,9 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                       data['message'] ?? '',
                       style: TextStyle(
                         fontSize: 15,
-                        color: isMe ? AppColors.whiteColor : AppColors.blackColor,
+                        color: isMe
+                            ? AppColors.whiteColor
+                            : AppColors.blackColor,
                       ),
                     ),
                     const Gap(4),
@@ -249,12 +249,14 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
             ),
             CircleAvatar(
               radius: 24,
-              backgroundColor: state is PrivateChatMessageSending 
-                  ? Colors.grey 
+              backgroundColor: state is PrivateChatMessageSending
+                  ? Colors.grey
                   : Colors.purple,
               child: IconButton(
                 icon: const Icon(Icons.send, color: AppColors.whiteColor),
-                onPressed: state is PrivateChatMessageSending ? null : sendMessage,
+                onPressed: state is PrivateChatMessageSending
+                    ? null
+                    : sendMessage,
               ),
             ),
           ],

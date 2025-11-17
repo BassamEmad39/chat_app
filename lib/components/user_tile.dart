@@ -15,7 +15,7 @@ class UserTile extends StatelessWidget {
 
   final String text;
   final String? subtitle;
-  final String? time; 
+  final String? time;
   final Widget? trailing;
   final int unreadCount;
   final void Function()? onTap;
@@ -44,7 +44,11 @@ class UserTile extends StatelessWidget {
             CircleAvatar(
               radius: 20,
               backgroundColor: AppColors.whiteColor.withValues(alpha: 0.2),
-              child: const Icon(Icons.person, color: AppColors.whiteColor, size: 22),
+              child: const Icon(
+                Icons.person,
+                color: AppColors.whiteColor,
+                size: 22,
+              ),
             ),
             const Gap(12),
             Expanded(
@@ -79,7 +83,9 @@ class UserTile extends StatelessWidget {
                           Text(
                             time!,
                             style: TextStyle(
-                              color: AppColors.whiteColor.withValues(alpha: 0.7),
+                              color: AppColors.whiteColor.withValues(
+                                alpha: 0.7,
+                              ),
                               fontSize: 12,
                             ),
                           ),
@@ -93,12 +99,15 @@ class UserTile extends StatelessWidget {
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.errorColor,
+                  color: AppColors.redColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   unreadCount.toString(),
-                  style: const TextStyle(color: AppColors.whiteColor, fontSize: 12),
+                  style: const TextStyle(
+                    color: AppColors.whiteColor,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             if (trailing != null) ...[const Gap(6), trailing!],

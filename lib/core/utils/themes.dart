@@ -27,11 +27,11 @@ class AppThemes {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppColors.errorColor, width: 1.5),
+        borderSide: BorderSide(color: AppColors.redColor, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: AppColors.errorColor, width: 1.5),
+        borderSide: BorderSide(color: AppColors.redColor, width: 1.5),
       ),
     ),
   );

@@ -32,7 +32,9 @@ class AppDrawer extends StatelessWidget {
           ),
           content: Text(
             "Are you sure you want to logout?",
-            style: TextStyle(color: AppColors.blackColor.withValues(alpha: 0.87)),
+            style: TextStyle(
+              color: AppColors.blackColor.withValues(alpha: 0.87),
+            ),
           ),
           actions: [
             TextButton(
@@ -47,7 +49,7 @@ class AppDrawer extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.errorColor,
+                backgroundColor: AppColors.redColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -81,9 +83,7 @@ class AppDrawer extends StatelessWidget {
 
         return Drawer(
           child: Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.mainGradient,
-            ),
+            decoration: const BoxDecoration(gradient: AppColors.mainGradient),
             child: SafeArea(
               child: Column(
                 children: [
@@ -116,7 +116,9 @@ class AppDrawer extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.blackColor.withValues(alpha: 0.2),
+                                color: AppColors.blackColor.withValues(
+                                  alpha: 0.2,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -153,7 +155,9 @@ class AppDrawer extends StatelessWidget {
                               Text(
                                 currentUser?.email ?? "No Email",
                                 style: TextStyle(
-                                  color: AppColors.whiteColor.withValues(alpha: 0.8),
+                                  color: AppColors.whiteColor.withValues(
+                                    alpha: 0.8,
+                                  ),
                                   fontSize: 14,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -165,13 +169,17 @@ class AppDrawer extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.whiteColor.withValues(alpha: 0.2),
+                                  color: AppColors.whiteColor.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   "Online",
                                   style: TextStyle(
-                                    color: AppColors.whiteColor.withValues(alpha: 0.9),
+                                    color: AppColors.whiteColor.withValues(
+                                      alpha: 0.9,
+                                    ),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -194,7 +202,7 @@ class AppDrawer extends StatelessWidget {
                           icon: Icons.home_rounded,
                           text: 'Home',
                           onTap: () {
-                            Navigator.pop(context); 
+                            Navigator.pop(context);
                           },
                           isSelected: true,
                         ),
@@ -202,21 +210,17 @@ class AppDrawer extends StatelessWidget {
                           icon: Icons.person_rounded,
                           text: 'My Profile',
                           onTap: () {
-                            
                             Navigator.pop(context);
                           },
                         ),
-                       
-                        
+
                         _buildDrawerItem(
                           icon: Icons.settings_rounded,
                           text: 'Settings',
                           onTap: () {
-                            
                             Navigator.pop(context);
                           },
                         ),
-                       
                       ],
                     ),
                   ),
@@ -239,14 +243,18 @@ class AppDrawer extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.chat_rounded,
-                              color: AppColors.whiteColor.withValues(alpha: 0.7),
+                              color: AppColors.whiteColor.withValues(
+                                alpha: 0.7,
+                              ),
                               size: 16,
                             ),
                             const Gap(6),
                             Text(
                               "ChatApp v1.0",
                               style: TextStyle(
-                                color: AppColors.whiteColor.withValues(alpha: 0.7),
+                                color: AppColors.whiteColor.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 12,
                               ),
                             ),
@@ -255,7 +263,7 @@ class AppDrawer extends StatelessWidget {
                         const Gap(12),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.errorColor.withValues(
+                            backgroundColor: AppColors.redColor.withValues(
                               alpha: 0.9,
                             ),
                             foregroundColor: AppColors.whiteColor,
@@ -264,7 +272,7 @@ class AppDrawer extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 4,
-                            shadowColor: AppColors.errorColor.withValues(
+                            shadowColor: AppColors.redColor.withValues(
                               alpha: 0.3,
                             ),
                           ),
@@ -349,7 +357,7 @@ class AppDrawer extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.errorColor,
+                          color: AppColors.redColor,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

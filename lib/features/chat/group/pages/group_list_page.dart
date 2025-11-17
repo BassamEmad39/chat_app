@@ -22,6 +22,19 @@ class GroupListPage extends StatefulWidget {
 
 class _GroupListPageState extends State<GroupListPage> {
   final ChatService _chatService = ChatService();
+  late final GroupListCubit _groupListCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupListCubit = GroupListCubit(chatService: _chatService);
+  }
+
+  @override
+  void dispose() {
+    _groupListCubit.close();
+    super.dispose();
+  }
 
   void _startGroupChat(String groupId, String groupName) async {
     final currentUserId = _chatService.currentUserId;
@@ -40,7 +53,12 @@ class _GroupListPageState extends State<GroupListPage> {
   void _createNewGroup() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CreateGroupPage()),
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: _groupListCubit,
+          child: const CreateGroupPage(),
+        ),
+      ),
     );
   }
 
@@ -51,129 +69,124 @@ class _GroupListPageState extends State<GroupListPage> {
       return const Center(child: Text('Not signed in'));
     }
 
-    return BlocProvider(
-      create: (context) => GroupListCubit(
-        chatService: _chatService,
-      ),
-      child: Stack(
-        children: [
-          BlocBuilder<GroupListCubit, GroupListState>(
-            builder: (context, state) {
-              if (state is GroupListInitial || state is GroupListLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (state is GroupListError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: ${state.message}'),
-                      const Gap(16),
-                      ElevatedButton(
-                        onPressed: () => context.read<GroupListCubit>().refreshGroups(),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              if (state is GroupListLoaded && state.groups.isEmpty) {
-                return const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.group_outlined,
-                        size: 64,
+    return BlocBuilder<GroupListCubit, GroupListState>(
+      bloc: _groupListCubit,
+      builder: (context, state) {
+        return Stack(
+          children: [
+            if (state is GroupListInitial || state is GroupListLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (state is GroupListError)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Error: ${state.message}'),
+                    const Gap(16),
+                    ElevatedButton(
+                      onPressed: () => _groupListCubit.refreshGroups(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            else if (state is GroupListLoaded && state.groups.isEmpty)
+              const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.group_outlined,
+                      size: 64,
+                      color: AppColors.greyColor,
+                    ),
+                    Gap(16),
+                    Text(
+                      'No groups yet',
+                      style: TextStyle(
+                        fontSize: 18,
                         color: AppColors.greyColor,
                       ),
-                      Gap(16),
-                      Text(
-                        'No groups yet',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: AppColors.greyColor,
-                        ),
+                    ),
+                    Gap(8),
+                    Text(
+                      'Create your first group to get started!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.greyColor,
                       ),
-                      Gap(8),
-                      Text(
-                        'Create your first group to get started!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.greyColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                    ),
+                  ],
+                ),
+              )
+            else
+              _buildGroupsList(state, currentUserId),
 
-              final groups = (state is GroupListLoaded 
-                  ? state.groups 
-                  : state is GroupListCreating 
-                      ? state.groups 
-                      : state is GroupListCreated 
-                          ? state.groups 
-                          : []) as List<Map<String, dynamic>>;
-
-              return StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _getGroupsWithLatestMessages(groups, currentUserId),
-                builder: (context, sortedGroupsSnapshot) {
-                  if (!sortedGroupsSnapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final sortedGroups = sortedGroupsSnapshot.data!;
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: sortedGroups.length,
-                    itemBuilder: (context, index) {
-                      final group = sortedGroups[index];
-                      final groupId = group['id'] as String;
-                      final groupName = group['name'] as String;
-                      final lastMessage = group['lastMessage'] as String;
-                      final sender = group['sender'] as String;
-                      final timestampStr = group['timestampStr'] as String;
-                      final unreadCount = group['unreadCount'] as int;
-
-                      return UserTile(
-                        text: groupName,
-                        subtitle: lastMessage.isNotEmpty
-                            ? '$sender: $lastMessage'
-                            : 'No messages yet',
-                        trailing: timestampStr.isNotEmpty
-                            ? Text(
-                                timestampStr,
-                                style: TextStyle(
-                                  color: AppColors.whiteColor,
-                                  fontSize: 12,
-                                ),
-                              )
-                            : null,
-                        unreadCount: unreadCount,
-                        onTap: () => _startGroupChat(groupId, groupName),
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          ),
-
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              onPressed: _createNewGroup,
-              backgroundColor: const Color(0xFF06B6D4),
-              child: const Icon(Icons.group_add, color: AppColors.whiteColor),
+            Positioned(
+              bottom: 20,
+              right: 20,
+              child: FloatingActionButton(
+                onPressed: _createNewGroup,
+                backgroundColor: const Color(0xFF06B6D4),
+                child: const Icon(Icons.group_add, color: AppColors.whiteColor),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGroupsList(GroupListState state, String currentUserId) {
+    final groups = (state is GroupListLoaded 
+        ? state.groups 
+        : state is GroupListCreating 
+            ? state.groups 
+            : state is GroupListCreated 
+                ? state.groups 
+                : []) as List<Map<String, dynamic>>;
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _getGroupsWithLatestMessages(groups, currentUserId),
+      builder: (context, sortedGroupsSnapshot) {
+        if (!sortedGroupsSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final sortedGroups = sortedGroupsSnapshot.data!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: sortedGroups.length,
+          itemBuilder: (context, index) {
+            final group = sortedGroups[index];
+            final groupId = group['id'] as String;
+            final groupName = group['name'] as String;
+            final lastMessage = group['lastMessage'] as String;
+            final sender = group['sender'] as String;
+            final timestampStr = group['timestampStr'] as String;
+            final unreadCount = group['unreadCount'] as int;
+
+            return UserTile(
+              text: groupName,
+              subtitle: lastMessage.isNotEmpty
+                  ? '$sender: $lastMessage'
+                  : 'No messages yet',
+              trailing: timestampStr.isNotEmpty
+                  ? Text(
+                      timestampStr,
+                      style: TextStyle(
+                        color: AppColors.whiteColor,
+                        fontSize: 12,
+                      ),
+                    )
+                  : null,
+              unreadCount: unreadCount,
+              onTap: () => _startGroupChat(groupId, groupName),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -218,7 +231,6 @@ class _GroupListPageState extends State<GroupListPage> {
           'lastMessageTime': lastMessageTime,
         };
 
-        // Emit sorted list
         final sortedGroups = groupDataMap.values.toList()
           ..sort((a, b) {
             final timeA = a['lastMessageTime'] as DateTime;

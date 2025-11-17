@@ -9,8 +9,8 @@ class AppColors {
   static const Color greyColor = Color(0xFF9E9E9E);
   static const Color borderColor = Color(0xFFE0E0E0);
 
-  static const Color successColor = Color(0xFF4CAF50);
-  static const Color errorColor = Color(0xFFF44336);
+  static const Color greenColor = Color(0xFF4CAF50);
+  static const Color redColor = Color(0xFFF44336);
 
   static const LinearGradient mainGradient = LinearGradient(
     colors: [primaryColor, secondaryColor],

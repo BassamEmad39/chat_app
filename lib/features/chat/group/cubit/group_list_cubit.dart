@@ -67,7 +67,6 @@ class GroupListCubit extends Cubit<GroupListState> {
 
     try {
       await _chatService.createGroup(name, memberIds);
-      // The groups list will update automatically via stream
     } catch (error) {
       emit(GroupListError('Failed to create group: $error'));
     }
@@ -75,7 +74,6 @@ class GroupListCubit extends Cubit<GroupListState> {
 
   Future<void> refreshGroups() async {
     emit(GroupListLoading());
-    // The stream will automatically update the state
   }
 
   @override
