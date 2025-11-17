@@ -247,6 +247,7 @@ class _PrivateChatPageState extends State<PrivateChatPage> {
                 onSubmitted: (value) => sendMessage(),
               ),
             ),
+            Gap(8),
             CircleAvatar(
               radius: 24,
               backgroundColor: state is PrivateChatMessageSending
