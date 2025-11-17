@@ -1,5 +1,5 @@
 import 'dart:developer';
-import 'package:chat_app/components/user_tile.dart';
+import 'package:chat_app/core/widgets/user_tile.dart';
 import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/features/chat/chat_services.dart';
 import 'package:chat_app/features/chat/private/pages/private_chat_page.dart';

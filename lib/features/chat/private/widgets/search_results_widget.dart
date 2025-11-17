@@ -1,4 +1,4 @@
-import 'package:chat_app/components/user_tile.dart';
+import 'package:chat_app/core/widgets/user_tile.dart';
 import 'package:chat_app/core/utils/app_colors.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:flutter/material.dart';
